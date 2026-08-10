@@ -1,0 +1,328 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-turquoise: #39b8b2;
+    --color-turquoise-dark: #2f9c97;
+    --color-yellow: #e6dd08;
+    --color-purple: #b63ccc;
+    --color-red: #d91012;
+    --color-red-dark: #b80e10;
+    --color-text: #444444;
+    --color-bg: #f7f7f7;
+    --color-paper: #fdfdfd;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 97%;
+        --foreground: 0 0% 27%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 27%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 27%;
+        --primary: 178 51% 47%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 0 0% 27%;
+        --muted: 0 0% 94%;
+        --muted-foreground: 0 0% 45%;
+        --accent: 178 51% 47%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 359 86% 46%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 89%;
+        --input: 0 0% 89%;
+        --ring: 178 51% 47%;
+        --radius: 1rem;
+    }
+}
+
+html,
+body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Open Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* subtle paper grain */
+    background-image:
+        radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+        radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    background-size:
+        24px 24px,
+        56px 56px;
+    background-position:
+        0 0,
+        12px 12px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+    font-family: "Poppins", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.font-hand {
+    font-family: "Caveat", cursive;
+}
+
+/* Brand color utilities */
+.text-brand-turquoise {
+    color: var(--color-turquoise);
+}
+.text-brand-yellow {
+    color: var(--color-yellow);
+}
+.text-brand-purple {
+    color: var(--color-purple);
+}
+.text-brand-red {
+    color: var(--color-red);
+}
+.text-brand-dark {
+    color: var(--color-text);
+}
+
+.bg-brand-turquoise {
+    background-color: var(--color-turquoise);
+}
+.bg-brand-yellow {
+    background-color: var(--color-yellow);
+}
+.bg-brand-purple {
+    background-color: var(--color-purple);
+}
+.bg-brand-red {
+    background-color: var(--color-red);
+}
+.bg-brand-paper {
+    background-color: var(--color-paper);
+}
+.bg-brand-bg {
+    background-color: var(--color-bg);
+}
+
+.border-brand-turquoise {
+    border-color: var(--color-turquoise);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--color-turquoise);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-primary:hover {
+    background-color: var(--color-turquoise-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -8px rgba(57, 184, 178, 0.5);
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--color-turquoise);
+    border: 2px solid var(--color-turquoise);
+    border-radius: 9999px;
+    padding: 0.7rem 1.5rem;
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-secondary:hover {
+    background-color: var(--color-turquoise);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-action {
+    background-color: var(--color-red);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.75rem 1.5rem;
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px -2px rgba(217, 16, 18, 0.35);
+}
+.btn-action:hover {
+    background-color: var(--color-red-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -8px rgba(217, 16, 18, 0.5);
+}
+
+/* Hand-drawn underline */
+.hand-underline {
+    position: relative;
+    display: inline-block;
+}
+.hand-underline::after {
+    content: "";
+    position: absolute;
+    left: -4%;
+    bottom: -8px;
+    width: 108%;
+    height: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 Q 50 -2 100 6 T 198 4' stroke='%2339B8B2' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+.hand-underline-yellow::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 Q 50 -2 100 6 T 198 4' stroke='%23E6DD08' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.hand-underline-red::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 Q 50 -2 100 6 T 198 4' stroke='%23D91012' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Blob shapes */
+.blob {
+    border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%;
+}
+.blob-2 {
+    border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
+}
+.blob-3 {
+    border-radius: 40% 60% 60% 40% / 50% 50% 50% 50%;
+}
+
+/* Card hover lift */
+.card-lift {
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+.card-lift:hover {
+    transform: translateY(-6px) rotate(-0.5deg);
+    box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.15);
+}
+
+/* Stair motif */
+.stair-divider {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 30' preserveAspectRatio='none'%3E%3Cpath d='M0 30 L0 22 L40 22 L40 14 L80 14 L80 6 L200 6 L200 30 Z' fill='%23F7F7F7'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    height: 32px;
+}
+
+/* Anim */
+@keyframes floaty {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+.animate-float {
+    animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+    0%,
+    100% {
+        transform: rotate(-2deg);
+    }
+    50% {
+        transform: rotate(2deg);
+    }
+}
+.animate-wiggle {
+    animation: wiggle 4s ease-in-out infinite;
+}
+
+/* Focus rings */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(57, 184, 178, 0.3);
+}
+
+/* Selection */
+::selection {
+    background-color: rgba(57, 184, 178, 0.3);
+    color: var(--color-text);
+}
+
+/* React-Quill custom styling */
+.rich-text-wrapper .ql-toolbar.ql-snow {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border-color: #d1d5db;
+    background: #f9fafb;
+}
+.rich-text-wrapper .ql-container.ql-snow {
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    border-color: #d1d5db;
+    min-height: 160px;
+    font-family: "Open Sans", system-ui, sans-serif;
+}
+.rich-text-wrapper .ql-editor {
+    min-height: 160px;
+}
+
+/* Article prose */
+.prose h2 {
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--color-text);
+    margin: 1.2em 0 0.6em;
+}
+.prose h3 {
+    font-family: "Poppins", sans-serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: var(--color-text);
+    margin: 1em 0 0.5em;
+}
+.prose p {
+    margin: 0.75em 0;
+    line-height: 1.7;
+}
+.prose ul,
+.prose ol {
+    margin: 0.5em 0 0.5em 1.25em;
+}
+.prose ul {
+    list-style: disc;
+}
+.prose ol {
+    list-style: decimal;
+}
+.prose a {
+    color: var(--color-turquoise);
+    text-decoration: underline;
+}
+.prose blockquote {
+    border-left: 4px solid var(--color-turquoise);
+    padding-left: 1em;
+    color: #6b7280;
+    font-style: italic;
+    margin: 1em 0;
+}
