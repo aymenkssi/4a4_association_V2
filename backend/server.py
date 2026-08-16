@@ -8,6 +8,7 @@ import os
 import uuid
 import hashlib
 import logging
+from html import escape
 import bcrypt
 import jwt
 import requests
@@ -506,6 +507,7 @@ async def startup():
     await db.visits.create_index("created_at")
     await db.visits.create_index("visitor_hash")
     await db.ip_geo.create_index("ip", unique=True)
+    await db.login_attempts.create_index("identifier", unique=True)
 
     # Seed admin (atomic upsert to avoid DuplicateKeyError race when
     # multiple worker processes run this startup hook concurrently)
@@ -567,11 +569,27 @@ async def shutdown():
     client.close()
 
 # ---------------- Auth Routes ----------------
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_MINUTES = 15
+
 @api.post("/auth/login", response_model=LoginOut)
-async def login(data: LoginIn):
+async def login(data: LoginIn, request: Request):
+    identifier = f"{_client_ip(request)}:{data.email.lower()}"
+    now = datetime.now(timezone.utc)
+    rec = await db.login_attempts.find_one({"identifier": identifier})
+    if rec and rec.get("locked_until") and datetime.fromisoformat(rec["locked_until"]) > now:
+        raise HTTPException(status_code=429, detail="Trop de tentatives. Réessayez dans quelques minutes.")
+
     user = await db.users.find_one({"email": data.email.lower()})
     if not user or not verify_password(data.password, user["password_hash"]):
+        attempts = (rec.get("count", 0) if rec else 0) + 1
+        update = {"identifier": identifier, "count": attempts, "updated_at": now.isoformat()}
+        if attempts >= MAX_LOGIN_ATTEMPTS:
+            update["locked_until"] = (now + timedelta(minutes=LOCKOUT_MINUTES)).isoformat()
+        await db.login_attempts.update_one({"identifier": identifier}, {"$set": update}, upsert=True)
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    await db.login_attempts.delete_one({"identifier": identifier})
     token = create_access_token(user["id"], user["email"])
     return LoginOut(token=token, user={"id": user["id"], "email": user["email"], "name": user.get("name", ""), "role": user.get("role", "admin")})
 
@@ -727,7 +745,7 @@ async def create_member(data: MemberIn):
     await db.members.insert_one(doc)
     doc.pop("_id", None)
     # notify
-    html = f"<h3>Nouvelle demande d'adhésion</h3><p><b>Nom :</b> {data.first_name} {data.last_name}</p><p><b>Email :</b> {data.email}</p><p><b>Téléphone :</b> {data.phone}</p><p><b>Adresse :</b> {data.address}</p><p><b>Intérêts :</b> {', '.join(data.interests)}</p><p><b>Message :</b> {data.message}</p>"
+    html = f"<h3>Nouvelle demande d'adhésion</h3><p><b>Nom :</b> {escape(data.first_name)} {escape(data.last_name)}</p><p><b>Email :</b> {escape(str(data.email))}</p><p><b>Téléphone :</b> {escape(data.phone)}</p><p><b>Adresse :</b> {escape(data.address)}</p><p><b>Intérêts :</b> {escape(', '.join(data.interests))}</p><p><b>Message :</b> {escape(data.message)}</p>"
     send_email_sync(CONTACT_EMAIL, "Nouvelle adhésion — 4à4 dix-huit", html)
     return doc
 
@@ -747,7 +765,7 @@ async def create_message(data: ContactIn):
     doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso(), "read": False}
     await db.messages.insert_one(doc)
     doc.pop("_id", None)
-    html = f"<h3>Nouveau message du formulaire de contact</h3><p><b>De :</b> {data.name} &lt;{data.email}&gt;</p><p><b>Sujet :</b> {data.subject}</p><p><b>Message :</b><br>{data.message}</p>"
+    html = f"<h3>Nouveau message du formulaire de contact</h3><p><b>De :</b> {escape(data.name)} &lt;{escape(str(data.email))}&gt;</p><p><b>Sujet :</b> {escape(data.subject)}</p><p><b>Message :</b><br>{escape(data.message)}</p>"
     send_email_sync(CONTACT_EMAIL, f"Contact — {data.subject or 'Sans sujet'}", html)
     return doc
 
@@ -834,6 +852,11 @@ async def track(data: TrackIn, request: Request):
     today = datetime.now(timezone.utc).date().isoformat()
     # Daily-salted hash to anonymize visitor (RGPD-friendly: cannot reverse to IP, rotates daily)
     visitor_hash = hashlib.sha256(f"{ip}:{today}:{JWT_SECRET}".encode()).hexdigest()[:32]
+    path = (data.path or "/")[:200]
+    # Throttle: skip if this visitor already hit this path in the last 60s (anti-flood on a public endpoint)
+    recent_cutoff = (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat()
+    if await db.visits.find_one({"visitor_hash": visitor_hash, "path": path, "created_at": {"$gte": recent_cutoff}}):
+        return {"ok": True, "throttled": True}
     # Cache country lookup per IP (avoids spamming ip-api.com)
     cached = await db.ip_geo.find_one({"ip": ip})
     if cached:
@@ -844,7 +867,7 @@ async def track(data: TrackIn, request: Request):
     ua = (request.headers.get("user-agent") or "")[:300]
     await db.visits.insert_one({
         "id": str(uuid.uuid4()),
-        "path": (data.path or "/")[:200],
+        "path": path,
         "referrer": (data.referrer or "")[:300],
         "visitor_hash": visitor_hash,
         "country": geo["country"],
@@ -1011,7 +1034,7 @@ app.include_router(api)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

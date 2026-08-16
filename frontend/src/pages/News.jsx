@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
 import api, { mediaUrl } from "../lib/api";
 import { useApp } from "../context/AppContext";
 import SEO from "../components/SEO";
@@ -53,7 +54,7 @@ const News = () => {
                                 {new Date(active.created_at).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}
                             </div>
                             <h2 className="font-display font-bold text-3xl text-brand-dark mb-4">{lang === "fr" ? active.title_fr : active.title_en}</h2>
-                            <div className="prose max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: (lang === "fr" ? active.body_fr || active.excerpt_fr : active.body_en || active.excerpt_en) || "" }} />
+                            <div className="prose max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((lang === "fr" ? active.body_fr || active.excerpt_fr : active.body_en || active.excerpt_en) || "") }} />
                         </div>
                     </div>
                 </div>
