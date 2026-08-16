@@ -8,6 +8,7 @@ import os
 import uuid
 import hashlib
 import logging
+import asyncio
 from html import escape
 import bcrypt
 import jwt
@@ -862,7 +863,7 @@ async def track(data: TrackIn, request: Request):
     if cached:
         geo = {"country": cached.get("country", "Inconnu"), "country_code": cached.get("country_code", "??")}
     else:
-        geo = _lookup_country(ip)
+        geo = await asyncio.to_thread(_lookup_country, ip)
         await db.ip_geo.update_one({"ip": ip}, {"$set": {"ip": ip, **geo, "cached_at": now_iso()}}, upsert=True)
     ua = (request.headers.get("user-agent") or "")[:300]
     await db.visits.insert_one({
