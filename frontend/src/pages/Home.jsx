@@ -25,20 +25,19 @@ const Home = () => {
 
     const c = page?.content?.[lang] || {};
     const a = actionsPage?.content?.[lang] || {};
-    const activities = a.activities || [];
 
-    const missionsTitle = lang === "fr" ? "Nos missions" : "Our missions";
-    const missions = (lang === "fr"
-        ? [
-            { icon: Palette, color: "#39B8B2", text: "Réduire les inégalités d'accès à la culture et à l'art pour améliorer la réussite scolaire." },
-            { icon: School, color: "#E6DD08", text: "Lisibilité de l'école — favoriser l'ouverture des écoles sur le quartier." },
-            { icon: HeartHandshake, color: "#B63CCC", text: "Faciliter l'accès et le lien avec les familles." },
-        ]
-        : [
-            { icon: Palette, color: "#39B8B2", text: "Reduce inequalities in access to culture and art to improve academic success." },
-            { icon: School, color: "#E6DD08", text: "School visibility — opening schools up to the neighborhood." },
-            { icon: HeartHandshake, color: "#B63CCC", text: "Making access and connection with families easier." },
-        ]);
+    const MISSION_ICONS = [Palette, School, HeartHandshake];
+    const MISSION_COLORS = ["#39B8B2", "#E6DD08", "#B63CCC"];
+    const missionsTitle = c.missions_title || (lang === "fr" ? "Nos missions" : "Our missions");
+    const missions = (c.missions && c.missions.length ? c.missions : []).map((m, i) => ({
+        text: typeof m === "string" ? m : m.text,
+        icon: MISSION_ICONS[i % MISSION_ICONS.length],
+        color: MISSION_COLORS[i % MISSION_COLORS.length],
+    }));
+
+    const actionsTitle = c.actions_title || a.title || (lang === "fr" ? "Nos actions" : "Our actions");
+    const actionsLead = c.actions_lead || a.lead || (lang === "fr" ? "au cœur du quartier" : "at the heart of the neighborhood");
+    const activities = (c.activities && c.activities.length ? c.activities : a.activities) || [];
 
     return (
         <div data-testid="home-page">
@@ -128,6 +127,7 @@ const Home = () => {
             </section>
 
             {/* Missions */}
+            {missions.length > 0 && (
             <section className="py-16 lg:py-24 bg-white" data-testid="home-missions">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
@@ -151,15 +151,16 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+            )}
 
             {/* Activities */}
             <section className="py-16 lg:py-24 bg-brand-bg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <div className="font-hand text-2xl text-brand-turquoise mb-2">{a.lead || "au cœur du quartier"}</div>
+                        <div className="font-hand text-2xl text-brand-turquoise mb-2">{actionsLead}</div>
                         <h2 className="text-4xl lg:text-5xl font-display font-bold text-brand-dark">
-                            <span className="hand-underline">{a.title?.split(" ")[0] || "Nos"}</span>{" "}
-                            {a.title?.split(" ").slice(1).join(" ") || "actions"}
+                            <span className="hand-underline">{actionsTitle.split(" ")[0]}</span>{" "}
+                            {actionsTitle.split(" ").slice(1).join(" ")}
                         </h2>
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
