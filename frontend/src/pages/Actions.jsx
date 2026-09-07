@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { useApp } from "../context/AppContext";
 import ActivityBlob from "../components/ActivityBlob";
@@ -42,7 +43,7 @@ const Actions = () => {
             <section className="py-16 bg-brand-bg">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl lg:text-4xl font-display font-bold text-brand-dark text-center mb-12">
-                        <span className="hand-underline hand-underline-red">{c.axes_title}</span>
+                        <Link to="/evenements" className="hand-underline hand-underline-red hover:text-brand-red transition-colors" data-testid="axes-title-link">{c.axes_title}</Link>
                     </h2>
                     <div className="grid md:grid-cols-2 gap-6">
                         {axes.map((ax, i) => {
