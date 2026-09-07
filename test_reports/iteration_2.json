@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only testing of the 'Planning de suivi' feature on /admin/events. Logged in as admin, verified planning panel visible above the events list with 4 stat cards, 'Prochain événement' block, and chronological timeline items with status badge + relative time. Verified auto-update on create (published future event → total & upcoming +1, new planning-item appears with 'À venir' badge and 'dans X jours' text), draft handling (published unchecked → drafts +1, timeline item shows 'Brouillon' tag), and delete (stats decrease, timeline item removed) — all without manual page refresh. Cleaned up test events; DB restored to seeded state (1 TEST event).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/events planning-stat-drafts", "issues": ["'Brouillons' stat card uses brand-red color (#D91012) which visually reads as an error/alert state, though drafts are a neutral status. Consider a neutral or amber tone."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "EventsAdmin.jsx save() catch shadows outer 'e' parameter (event) with error variable — minor lint concern only.",
+    "planning.next fallback logic prefers a published upcoming event but falls back to any upcoming (including drafts) — acceptable but worth documenting.",
+    "relTime uses Math.round on ms→days which can flip 'aujourd'hui'/'demain' near midnight due to hour offset (compares to new Date() not startOfToday). Minor edge case only."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "admin@4a4dixhuit.org / Admin4a4!2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created 2 test events (TEST_PLAN_FUTURE published, TEST_PLAN_DRAFT draft) during testing; both were deleted at end of test. Also cleaned an orphan TEST_PLAN_FUTURE from an earlier partial run. DB now contains only the seeded 'TEST' event (2026-09-14).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Planning de suivi feature is fully working. Auto-update on create/delete works via load() call after save/delete. All required data-testids (events-planning, planning-stat-total/upcoming/past/drafts, planning-next, planning-item-<id>) are present and behave correctly. Only cosmetic note: drafts stat uses red color."
+}

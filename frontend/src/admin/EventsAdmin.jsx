@@ -1,10 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit, X, Save } from "lucide-react";
+import { Plus, Trash2, Edit, X, Save, CalendarClock, CheckCircle2, Clock, CalendarDays, FileText } from "lucide-react";
 import MediaPicker from "./MediaPicker";
 
 const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", image_url: "", published: true };
+
+const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+
+const relTime = (dateStr) => {
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    const day = Math.round((d - startOfToday()) / 86400000);
+    if (day === 0) return "aujourd'hui";
+    if (day === 1) return "demain";
+    if (day === -1) return "hier";
+    if (day > 0) return `dans ${day} jours`;
+    return `il y a ${Math.abs(day)} jours`;
+};
 
 const EventsAdmin = () => {
     const [items, setItems] = useState([]);
@@ -17,6 +29,23 @@ const EventsAdmin = () => {
         } catch (e) {}
     };
     useEffect(() => { load(); }, []);
+
+    const planning = useMemo(() => {
+        const today = startOfToday();
+        const sorted = [...items].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const upcoming = sorted.filter((e) => new Date(e.date) >= today);
+        const past = sorted.filter((e) => new Date(e.date) < today);
+        const drafts = items.filter((e) => !e.published);
+        const timeline = [...upcoming, ...[...past].reverse()];
+        return { upcoming, past, drafts, timeline, next: upcoming.find((e) => e.published) || upcoming[0] };
+    }, [items]);
+
+    const statusOf = (dateStr) => {
+        const day = Math.round((new Date(dateStr) - startOfToday()) / 86400000);
+        if (day === 0) return { label: "Aujourd'hui", color: "#E6DD08", dot: "#E6DD08" };
+        if (day > 0) return { label: "À venir", color: "#39B8B2", dot: "#39B8B2" };
+        return { label: "Passé", color: "#9CA3AF", dot: "#9CA3AF" };
+    };
 
     const save = async (e) => {
         e.preventDefault();
@@ -40,6 +69,78 @@ const EventsAdmin = () => {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="font-display font-bold text-3xl text-brand-dark">Événements</h1>
                 <button onClick={() => setEditing({ ...empty })} className="btn-primary" data-testid="admin-events-new"><Plus size={16} /> Nouveau</button>
+            </div>
+
+            {/* Planning de suivi (auto) */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 mb-8" data-testid="events-planning">
+                <div className="flex items-center gap-2 mb-1">
+                    <CalendarClock size={20} className="text-brand-purple" />
+                    <h2 className="font-display font-bold text-xl text-brand-dark">Planning de suivi</h2>
+                </div>
+                <p className="text-xs text-gray-400 mb-5">Mis à jour automatiquement selon les événements créés</p>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                    {[
+                        { key: "total", label: "Total", value: items.length, Icon: CalendarDays, color: "#B63CCC" },
+                        { key: "upcoming", label: "À venir", value: planning.upcoming.length, Icon: Clock, color: "#39B8B2" },
+                        { key: "past", label: "Passés", value: planning.past.length, Icon: CheckCircle2, color: "#9CA3AF" },
+                        { key: "drafts", label: "Brouillons", value: planning.drafts.length, Icon: FileText, color: "#F59E0B" },
+                    ].map(({ key, label, value, Icon, color }) => (
+                        <div key={key} className="rounded-2xl p-4 flex items-center gap-3" style={{ backgroundColor: `${color}12` }} data-testid={`planning-stat-${key}`}>
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}22` }}>
+                                <Icon size={20} style={{ color }} />
+                            </div>
+                            <div>
+                                <div className="font-display font-bold text-2xl text-brand-dark leading-none">{value}</div>
+                                <div className="text-xs text-gray-500 mt-1">{label}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {planning.next && (
+                    <div className="rounded-2xl p-4 mb-6 flex items-center justify-between bg-brand-turquoise/10 border border-brand-turquoise/20" data-testid="planning-next">
+                        <div>
+                            <div className="text-xs font-display font-bold text-brand-turquoise uppercase tracking-wider mb-1">Prochain événement</div>
+                            <div className="font-display font-bold text-brand-dark">{planning.next.title_fr}</div>
+                            <div className="text-sm text-gray-500">{new Date(planning.next.date).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })} · {planning.next.location}</div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-4">
+                            <div className="font-display font-bold text-2xl text-brand-turquoise capitalize">{relTime(planning.next.date)}</div>
+                        </div>
+                    </div>
+                )}
+
+                {planning.timeline.length > 0 ? (
+                    <div className="relative pl-6">
+                        <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-gray-100" />
+                        <div className="space-y-4">
+                            {planning.timeline.map((ev) => {
+                                const st = statusOf(ev.date);
+                                return (
+                                    <div key={ev.id} className="relative" data-testid={`planning-item-${ev.id}`}>
+                                        <span className="absolute -left-6 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow" style={{ backgroundColor: st.dot }} />
+                                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                                            <div>
+                                                <div className="font-display font-semibold text-brand-dark flex items-center gap-2">
+                                                    {ev.title_fr}
+                                                    {!ev.published && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Brouillon</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{new Date(ev.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}{ev.location ? ` · ${ev.location}` : ""}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs text-gray-400 capitalize">{relTime(ev.date)}</span>
+                                                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: `${st.color}22`, color: st.color }}>{st.label}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-gray-400 text-sm">Aucun événement pour le moment. Créez-en un pour alimenter le planning.</p>
+                )}
             </div>
 
             <div className="grid gap-3">
