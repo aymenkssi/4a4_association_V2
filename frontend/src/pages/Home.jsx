@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Heart, Sparkles, Users, Calendar } from "lucide-react";
+import { ArrowRight, Heart, Sparkles, Users, Calendar, Palette, School, HeartHandshake } from "lucide-react";
 import api, { mediaUrl } from "../lib/api";
 import { useApp } from "../context/AppContext";
 import ActivityBlob from "../components/ActivityBlob";
@@ -26,6 +26,19 @@ const Home = () => {
     const c = page?.content?.[lang] || {};
     const a = actionsPage?.content?.[lang] || {};
     const activities = a.activities || [];
+
+    const missionsTitle = lang === "fr" ? "Nos missions" : "Our missions";
+    const missions = (lang === "fr"
+        ? [
+            { icon: Palette, color: "#39B8B2", text: "Réduire les inégalités d'accès à la culture et à l'art pour améliorer la réussite scolaire." },
+            { icon: School, color: "#E6DD08", text: "Lisibilité de l'école — favoriser l'ouverture des écoles sur le quartier." },
+            { icon: HeartHandshake, color: "#B63CCC", text: "Faciliter l'accès et le lien avec les familles." },
+        ]
+        : [
+            { icon: Palette, color: "#39B8B2", text: "Reduce inequalities in access to culture and art to improve academic success." },
+            { icon: School, color: "#E6DD08", text: "School visibility — opening schools up to the neighborhood." },
+            { icon: HeartHandshake, color: "#B63CCC", text: "Making access and connection with families easier." },
+        ]);
 
     return (
         <div data-testid="home-page">
@@ -110,6 +123,31 @@ const Home = () => {
                                 );
                             })}
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Missions */}
+            <section className="py-16 lg:py-24 bg-white" data-testid="home-missions">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-4xl lg:text-5xl font-display font-bold text-brand-dark">
+                            <span className="hand-underline hand-underline-yellow">{missionsTitle.split(" ")[0]}</span>{" "}
+                            {missionsTitle.split(" ").slice(1).join(" ")}
+                        </h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {missions.map((m, i) => {
+                            const Icon = m.icon;
+                            return (
+                                <div key={i} className="bg-brand-bg rounded-3xl p-8 card-lift" data-testid={`home-mission-${i}`}>
+                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: `${m.color}22` }}>
+                                        <Icon size={28} style={{ color: m.color }} />
+                                    </div>
+                                    <p className="text-gray-700 leading-relaxed text-lg">{m.text}</p>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </section>
