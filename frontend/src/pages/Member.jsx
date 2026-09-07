@@ -7,6 +7,11 @@ import SEO from "../components/SEO";
 
 const INTERESTS = ["music", "gardening", "cooking", "yoga", "judo", "theater"];
 
+const INTEREST_LABELS = {
+    fr: { music: "Musique", gardening: "Jardinage", cooking: "Cuisine", yoga: "Yoga", judo: "Judo", theater: "Théâtre" },
+    en: { music: "Music", gardening: "Gardening", cooking: "Cooking", yoga: "Yoga", judo: "Judo", theater: "Theater" },
+};
+
 const Member = () => {
     const { lang, tr } = useApp();
     const [page, setPage] = useState(null);
@@ -90,8 +95,8 @@ const Member = () => {
                             <label className="block text-sm font-display font-semibold mb-2">{tr("member.interests")}</label>
                             <div className="flex flex-wrap gap-2">
                                 {INTERESTS.map((k) => (
-                                    <button type="button" key={k} onClick={() => toggle(k)} className={`px-3 py-1.5 rounded-full text-sm font-display capitalize ${form.interests.includes(k) ? "bg-brand-turquoise text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} data-testid={`member-interest-${k}`}>
-                                        {k}
+                                    <button type="button" key={k} onClick={() => toggle(k)} className={`px-3 py-1.5 rounded-full text-sm font-display ${form.interests.includes(k) ? "bg-brand-turquoise text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} data-testid={`member-interest-${k}`}>
+                                        {(INTEREST_LABELS[lang] || INTEREST_LABELS.fr)[k]}
                                     </button>
                                 ))}
                             </div>
