@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Menu, X, Globe, Heart, MapPin, Phone, Mail, Lock, LayoutDashboard } from "lucide-react";
+import { Menu, X, Globe, Heart, MapPin, Phone, Mail, Lock, LayoutDashboard, LogOut } from "lucide-react";
 import Logo from "./Logo";
 import SocialIcons from "./SocialIcons";
 import { useApp } from "../context/AppContext";
@@ -18,7 +18,7 @@ const navItems = [
 ];
 
 export const Header = () => {
-    const { tr, lang, changeLang, user } = useApp();
+    const { tr, lang, changeLang, user, logout } = useApp();
     const [open, setOpen] = useState(false);
     const location = useLocation();
 
@@ -66,15 +66,23 @@ export const Header = () => {
                         <Globe size={14} />
                         {lang.toUpperCase()}
                     </button>
-                    <Link
-                        to={user ? "/admin" : "/admin/login"}
-                        className="ml-1 w-10 h-10 rounded-full bg-brand-dark text-white hover:bg-brand-turquoise transition-colors inline-flex items-center justify-center"
-                        data-testid="nav-admin-login"
-                        title={user ? tr("nav.admin") : tr("nav.login")}
-                        aria-label={user ? tr("nav.admin") : tr("nav.login")}
-                    >
-                        {user ? <LayoutDashboard size={16} /> : <Lock size={16} />}
-                    </Link>
+                    {user ? (
+                        <div className="ml-2 flex items-center gap-1.5">
+                            {user.role === "admin" && (
+                                <Link to="/admin" className="w-10 h-10 rounded-full bg-brand-dark text-white hover:bg-brand-turquoise transition-colors inline-flex items-center justify-center" data-testid="nav-admin-dashboard" title={tr("nav.admin")} aria-label={tr("nav.admin")}>
+                                    <LayoutDashboard size={16} />
+                                </Link>
+                            )}
+                            <span className="text-sm font-display font-semibold text-brand-dark px-1 hidden xl:inline" data-testid="nav-user-name">{(user.name || "").split(" ")[0]}</span>
+                            <button onClick={logout} className="w-10 h-10 rounded-full border-2 border-gray-200 text-gray-600 hover:border-brand-red hover:text-brand-red transition-colors inline-flex items-center justify-center" data-testid="nav-logout" title={tr("nav.logout")} aria-label={tr("nav.logout")}>
+                                <LogOut size={16} />
+                            </button>
+                        </div>
+                    ) : (
+                        <Link to="/connexion" className="ml-1 px-4 py-2 rounded-full bg-brand-dark text-white hover:bg-brand-turquoise transition-colors inline-flex items-center gap-2 text-sm font-display font-semibold" data-testid="nav-login">
+                            <Lock size={14} /> {lang === "fr" ? "Connexion" : "Login"}
+                        </Link>
+                    )}
                 </nav>
 
                 <button
@@ -116,14 +124,22 @@ export const Header = () => {
                             <Globe size={14} />
                             {lang === "fr" ? "English" : "Français"}
                         </button>
-                        <Link
-                            to={user ? "/admin" : "/admin/login"}
-                            className="mt-1 px-3 py-2 rounded-full bg-brand-dark text-white font-display font-semibold inline-flex items-center justify-center gap-2"
-                            data-testid="mobile-nav-admin-login"
-                        >
-                            {user ? <LayoutDashboard size={14} /> : <Lock size={14} />}
-                            {user ? tr("nav.admin") : tr("nav.login")}
-                        </Link>
+                        {user ? (
+                            <>
+                                {user.role === "admin" && (
+                                    <Link to="/admin" className="mt-1 px-3 py-2 rounded-full bg-brand-dark text-white font-display font-semibold inline-flex items-center justify-center gap-2" data-testid="mobile-nav-admin-dashboard">
+                                        <LayoutDashboard size={14} /> {tr("nav.admin")}
+                                    </Link>
+                                )}
+                                <button onClick={logout} className="mt-1 px-3 py-2 rounded-full border-2 border-gray-200 text-brand-red font-display font-semibold inline-flex items-center justify-center gap-2" data-testid="mobile-nav-logout">
+                                    <LogOut size={14} /> {tr("nav.logout")}
+                                </button>
+                            </>
+                        ) : (
+                            <Link to="/connexion" className="mt-1 px-3 py-2 rounded-full bg-brand-dark text-white font-display font-semibold inline-flex items-center justify-center gap-2" data-testid="mobile-nav-login">
+                                <Lock size={14} /> {lang === "fr" ? "Connexion" : "Login"}
+                            </Link>
+                        )}
                     </div>
                 </div>
             )}

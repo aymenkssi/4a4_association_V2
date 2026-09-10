@@ -15,7 +15,7 @@ import jwt
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, UploadFile, File, Form, Query, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, UploadFile, File, Form, Query, Header, BackgroundTasks
 from fastapi.responses import Response as FastResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -77,6 +77,11 @@ async def get_current_user(authorization: str = Header(None)) -> dict:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+async def require_admin(current: dict = Depends(get_current_user)) -> dict:
+    if current.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé à l'administration")
+    return current
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -144,6 +149,13 @@ class ChangePasswordIn(BaseModel):
     current_password: str
     new_password: str
 
+class RegisterIn(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str = ""
+    password: str
+    rgpd_consent: bool = False
+
 # Pages: rich content per page, bilingual
 class PageContent(BaseModel):
     fr: Dict[str, Any] = Field(default_factory=dict)
@@ -166,6 +178,7 @@ class EventIn(BaseModel):
     date: str  # ISO
     location: str = ""
     image_url: str = ""
+    capacity: int = 0  # 0 = illimité
     published: bool = True
 
 class EventOut(EventIn):
@@ -541,6 +554,7 @@ async def startup():
     await db.visits.create_index("visitor_hash")
     await db.ip_geo.create_index("ip", unique=True)
     await db.login_attempts.create_index("identifier", unique=True)
+    await db.event_registrations.create_index([("event_id", 1), ("user_id", 1)], unique=True)
 
     # Seed admin (atomic upsert to avoid DuplicateKeyError race when
     # multiple worker processes run this startup hook concurrently)
@@ -624,7 +638,30 @@ async def login(data: LoginIn, request: Request):
 
     await db.login_attempts.delete_one({"identifier": identifier})
     token = create_access_token(user["id"], user["email"])
-    return LoginOut(token=token, user={"id": user["id"], "email": user["email"], "name": user.get("name", ""), "role": user.get("role", "admin")})
+    return LoginOut(token=token, user={"id": user["id"], "email": user["email"], "name": user.get("name", ""), "role": user.get("role", "user")})
+
+@api.post("/auth/register", response_model=LoginOut)
+async def register(data: RegisterIn, background: BackgroundTasks):
+    if not data.rgpd_consent:
+        raise HTTPException(status_code=400, detail="Vous devez accepter la politique de confidentialité (RGPD).")
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 6 caractères.")
+    if not data.name.strip():
+        raise HTTPException(status_code=400, detail="Le nom est requis.")
+    email = data.email.lower()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Un compte existe déjà avec cet email.")
+    uid = str(uuid.uuid4())
+    doc = {
+        "id": uid, "email": email, "password_hash": hash_password(data.password),
+        "name": data.name.strip(), "phone": data.phone.strip(), "role": "user",
+        "rgpd_consent": True, "rgpd_consent_at": now_iso(), "created_at": now_iso(),
+    }
+    await db.users.insert_one(doc)
+    welcome = f"<h3>Bienvenue chez 4à4 dix-huit 🎉</h3><p>Bonjour {escape(data.name.strip())},</p><p>Votre compte a bien été créé. Vous pouvez maintenant vous inscrire aux événements de l'association depuis notre site.</p><p>À bientôt !<br>L'équipe 4à4 dix-huit</p>"
+    background.add_task(send_email_sync, email, "Bienvenue — 4à4 dix-huit", welcome)
+    token = create_access_token(uid, email)
+    return LoginOut(token=token, user={"id": uid, "email": email, "name": data.name.strip(), "role": "user"})
 
 @api.get("/auth/me")
 async def me(current=Depends(get_current_user)):
@@ -652,7 +689,7 @@ async def list_pages():
     return pages
 
 @api.put("/pages/{slug}", response_model=PageOut)
-async def update_page(slug: str, data: PageUpdateIn, current=Depends(get_current_user)):
+async def update_page(slug: str, data: PageUpdateIn, current=Depends(require_admin)):
     res = await db.pages.find_one_and_update(
         {"slug": slug},
         {"$set": {"content": data.content.model_dump(), "updated_at": now_iso()}},
@@ -669,17 +706,24 @@ async def update_page(slug: str, data: PageUpdateIn, current=Depends(get_current
 async def list_events(only_published: bool = True):
     q = {"published": True} if only_published else {}
     items = await db.events.find(q, {"_id": 0}).sort("date", 1).to_list(500)
+    counts = await db.event_registrations.aggregate([{"$group": {"_id": "$event_id", "n": {"$sum": 1}}}]).to_list(2000)
+    cmap = {c["_id"]: c["n"] for c in counts}
+    for it in items:
+        rc = cmap.get(it["id"], 0)
+        it["registered_count"] = rc
+        cap = it.get("capacity", 0) or 0
+        it["spots_left"] = (cap - rc) if cap > 0 else None
     return items
 
 @api.post("/events", response_model=EventOut)
-async def create_event(data: EventIn, current=Depends(get_current_user)):
+async def create_event(data: EventIn, current=Depends(require_admin)):
     doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso()}
     await db.events.insert_one(doc)
     doc.pop("_id", None)
     return doc
 
 @api.put("/events/{event_id}", response_model=EventOut)
-async def update_event(event_id: str, data: EventIn, current=Depends(get_current_user)):
+async def update_event(event_id: str, data: EventIn, current=Depends(require_admin)):
     await db.events.update_one({"id": event_id}, {"$set": data.model_dump()})
     doc = await db.events.find_one({"id": event_id}, {"_id": 0})
     if not doc:
@@ -687,9 +731,50 @@ async def update_event(event_id: str, data: EventIn, current=Depends(get_current
     return doc
 
 @api.delete("/events/{event_id}")
-async def delete_event(event_id: str, current=Depends(get_current_user)):
+async def delete_event(event_id: str, current=Depends(require_admin)):
     r = await db.events.delete_one({"id": event_id})
+    await db.event_registrations.delete_many({"event_id": event_id})
     return {"deleted": r.deleted_count}
+
+# ---------------- Event Registrations ----------------
+@api.get("/events/my-registrations")
+async def my_event_registrations(current=Depends(get_current_user)):
+    regs = await db.event_registrations.find({"user_id": current["id"]}, {"_id": 0, "event_id": 1}).to_list(1000)
+    return [r["event_id"] for r in regs]
+
+@api.post("/events/{event_id}/register")
+async def register_for_event(event_id: str, background: BackgroundTasks, current=Depends(get_current_user)):
+    ev = await db.events.find_one({"id": event_id})
+    if not ev or not ev.get("published"):
+        raise HTTPException(status_code=404, detail="Événement introuvable")
+    if await db.event_registrations.find_one({"event_id": event_id, "user_id": current["id"]}):
+        raise HTTPException(status_code=400, detail="Vous êtes déjà inscrit à cet événement.")
+    cap = ev.get("capacity", 0) or 0
+    if cap > 0 and await db.event_registrations.count_documents({"event_id": event_id}) >= cap:
+        raise HTTPException(status_code=400, detail="Cet événement est complet.")
+    reg = {
+        "id": str(uuid.uuid4()), "event_id": event_id, "user_id": current["id"],
+        "user_name": current.get("name", ""), "user_email": current["email"],
+        "user_phone": current.get("phone", ""), "created_at": now_iso(),
+    }
+    await db.event_registrations.insert_one(reg)
+    reg.pop("_id", None)
+    when = (ev.get("date", "") or "")[:16].replace("T", " à ")
+    user_html = f"<h3>Inscription confirmée ✅</h3><p>Bonjour {escape(current.get('name',''))},</p><p>Votre inscription à l'événement <b>{escape(ev.get('title_fr',''))}</b> est bien confirmée.</p><p><b>Date :</b> {escape(when)}<br><b>Lieu :</b> {escape(ev.get('location','') or 'à préciser')}</p><p>Au plaisir de vous y retrouver !<br>L'équipe 4à4 dix-huit</p>"
+    background.add_task(send_email_sync, current["email"], f"Inscription confirmée — {ev.get('title_fr','')}", user_html)
+    admin_html = f"<p><b>{escape(current.get('name',''))}</b> ({escape(current['email'])}, {escape(current.get('phone','') or '—')}) s'est inscrit(e) à <b>{escape(ev.get('title_fr',''))}</b>.</p>"
+    background.add_task(send_email_sync, CONTACT_EMAIL, f"Nouvelle inscription — {ev.get('title_fr','')}", admin_html)
+    return {"ok": True, "registration": reg}
+
+@api.delete("/events/{event_id}/register")
+async def unregister_from_event(event_id: str, current=Depends(get_current_user)):
+    r = await db.event_registrations.delete_one({"event_id": event_id, "user_id": current["id"]})
+    return {"deleted": r.deleted_count}
+
+@api.get("/events/{event_id}/registrations")
+async def list_event_registrations(event_id: str, current=Depends(require_admin)):
+    regs = await db.event_registrations.find({"event_id": event_id}, {"_id": 0}).sort("created_at", 1).to_list(2000)
+    return regs
 
 # ---------------- News ----------------
 @api.get("/news")
@@ -699,14 +784,14 @@ async def list_news(only_published: bool = True):
     return items
 
 @api.post("/news", response_model=NewsOut)
-async def create_news(data: NewsIn, current=Depends(get_current_user)):
+async def create_news(data: NewsIn, current=Depends(require_admin)):
     doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso()}
     await db.news.insert_one(doc)
     doc.pop("_id", None)
     return doc
 
 @api.put("/news/{news_id}", response_model=NewsOut)
-async def update_news(news_id: str, data: NewsIn, current=Depends(get_current_user)):
+async def update_news(news_id: str, data: NewsIn, current=Depends(require_admin)):
     await db.news.update_one({"id": news_id}, {"$set": data.model_dump()})
     doc = await db.news.find_one({"id": news_id}, {"_id": 0})
     if not doc:
@@ -714,7 +799,7 @@ async def update_news(news_id: str, data: NewsIn, current=Depends(get_current_us
     return doc
 
 @api.delete("/news/{news_id}")
-async def delete_news(news_id: str, current=Depends(get_current_user)):
+async def delete_news(news_id: str, current=Depends(require_admin)):
     r = await db.news.delete_one({"id": news_id})
     return {"deleted": r.deleted_count}
 
@@ -726,20 +811,20 @@ async def list_gallery(category: Optional[str] = None):
     return items
 
 @api.post("/gallery", response_model=GalleryItemOut)
-async def create_gallery_item(data: GalleryItemIn, current=Depends(get_current_user)):
+async def create_gallery_item(data: GalleryItemIn, current=Depends(require_admin)):
     doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso()}
     await db.gallery.insert_one(doc)
     doc.pop("_id", None)
     return doc
 
 @api.delete("/gallery/{item_id}")
-async def delete_gallery_item(item_id: str, current=Depends(get_current_user)):
+async def delete_gallery_item(item_id: str, current=Depends(require_admin)):
     r = await db.gallery.delete_one({"id": item_id})
     return {"deleted": r.deleted_count}
 
 # ---------------- Upload ----------------
 @api.post("/upload")
-async def upload_file(file: UploadFile = File(...), current=Depends(get_current_user)):
+async def upload_file(file: UploadFile = File(...), current=Depends(require_admin)):
     ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin").lower()
     path = f"{APP_NAME}/uploads/{uuid.uuid4()}.{ext}"
     data = await file.read()
@@ -783,12 +868,12 @@ async def create_member(data: MemberIn):
     return doc
 
 @api.get("/members")
-async def list_members(current=Depends(get_current_user)):
+async def list_members(current=Depends(require_admin)):
     items = await db.members.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
 
 @api.delete("/members/{member_id}")
-async def delete_member(member_id: str, current=Depends(get_current_user)):
+async def delete_member(member_id: str, current=Depends(require_admin)):
     r = await db.members.delete_one({"id": member_id})
     return {"deleted": r.deleted_count}
 
@@ -803,17 +888,17 @@ async def create_message(data: ContactIn):
     return doc
 
 @api.get("/messages")
-async def list_messages(current=Depends(get_current_user)):
+async def list_messages(current=Depends(require_admin)):
     items = await db.messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
 
 @api.delete("/messages/{message_id}")
-async def delete_message(message_id: str, current=Depends(get_current_user)):
+async def delete_message(message_id: str, current=Depends(require_admin)):
     r = await db.messages.delete_one({"id": message_id})
     return {"deleted": r.deleted_count}
 
 @api.patch("/messages/{message_id}/read")
-async def mark_message_read(message_id: str, current=Depends(get_current_user)):
+async def mark_message_read(message_id: str, current=Depends(require_admin)):
     await db.messages.update_one({"id": message_id}, {"$set": {"read": True}})
     return {"ok": True}
 
@@ -830,7 +915,7 @@ async def get_settings():
     return defaults
 
 @api.put("/settings")
-async def update_settings(data: SettingsModel, current=Depends(get_current_user)):
+async def update_settings(data: SettingsModel, current=Depends(require_admin)):
     await db.settings.update_one({"_id": "global"}, {"$set": data.model_dump()}, upsert=True)
     return data.model_dump()
 
@@ -911,7 +996,7 @@ async def track(data: TrackIn, request: Request):
     return {"ok": True}
 
 @api.get("/admin/analytics")
-async def analytics(current=Depends(get_current_user)):
+async def analytics(current=Depends(require_admin)):
     now = datetime.now(timezone.utc)
     today_str = now.date().isoformat()
     twelve_months_ago = (now - timedelta(days=365)).isoformat()
@@ -1040,7 +1125,7 @@ async def analytics(current=Depends(get_current_user)):
     }
 
 @api.delete("/admin/analytics")
-async def reset_analytics(current=Depends(get_current_user)):
+async def reset_analytics(current=Depends(require_admin)):
     v = await db.visits.delete_many({})
     g = await db.ip_geo.delete_many({})
     logger.info(f"Analytics reset by {current.get('email')}: {v.deleted_count} visits, {g.deleted_count} ip caches")
@@ -1052,7 +1137,7 @@ class TestEmailIn(BaseModel):
     message: str = "Ceci est un email de test envoyé depuis l'administration du site 4à4 dix-huit."
 
 @api.post("/test-email")
-async def test_email(data: TestEmailIn, current=Depends(get_current_user)):
+async def test_email(data: TestEmailIn, current=Depends(require_admin)):
     html = f"""<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;\">
         <h2 style=\"color:#39B8B2;\">Email de test — 4à4 dix-huit</h2>
         <p style=\"color:#444;\">{data.message}</p>

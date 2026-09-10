@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../lib/api";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit, X, Save, CalendarClock, CheckCircle2, Clock, CalendarDays, FileText } from "lucide-react";
+import { Plus, Trash2, Edit, X, Save, CalendarClock, CheckCircle2, Clock, CalendarDays, FileText, Users } from "lucide-react";
 import MediaPicker from "./MediaPicker";
 
-const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", image_url: "", published: true };
+const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", image_url: "", capacity: 0, published: true };
 
 const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 
@@ -21,6 +21,14 @@ const relTime = (dateStr) => {
 const EventsAdmin = () => {
     const [items, setItems] = useState([]);
     const [editing, setEditing] = useState(null);
+    const [participants, setParticipants] = useState(null);
+
+    const viewParticipants = async (ev) => {
+        try {
+            const r = await api.get(`/events/${ev.id}/registrations`);
+            setParticipants({ event: ev, list: r.data || [] });
+        } catch (e) { toast.error("Erreur de chargement des participants"); }
+    };
 
     const load = async () => {
         try {
@@ -149,9 +157,10 @@ const EventsAdmin = () => {
                         <div>
                             <div className="font-display font-bold text-brand-dark">{ev.title_fr}</div>
                             <div className="text-sm text-gray-500">{new Date(ev.date).toLocaleDateString("fr-FR")} · {ev.location}</div>
-                            <div className="text-xs text-gray-400">{ev.published ? "Publié" : "Brouillon"}</div>
+                            <div className="text-xs text-gray-400">{ev.published ? "Publié" : "Brouillon"} · {ev.registered_count || 0} inscrit(s){ev.capacity ? ` / ${ev.capacity} places` : " (illimité)"}</div>
                         </div>
                         <div className="flex gap-2">
+                            <button onClick={() => viewParticipants(ev)} className="p-2 text-brand-purple hover:bg-purple-50 rounded-lg inline-flex items-center gap-1 text-sm" data-testid={`participants-event-${ev.id}`} title="Participants"><Users size={16} /> {ev.registered_count || 0}</button>
                             <button onClick={() => setEditing(ev)} className="p-2 text-brand-turquoise hover:bg-gray-100 rounded-lg" data-testid={`edit-event-${ev.id}`}><Edit size={16} /></button>
                             <button onClick={() => remove(ev.id)} className="p-2 text-brand-red hover:bg-red-50 rounded-lg" data-testid={`delete-event-${ev.id}`}><Trash2 size={16} /></button>
                         </div>
@@ -175,6 +184,9 @@ const EventsAdmin = () => {
                             <label className="block"><span className="text-xs font-semibold">Date</span><input type="datetime-local" required value={editing.date?.slice(0, 16)} onChange={(e) => setEditing({ ...editing, date: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="event-date" /></label>
                             <label className="block"><span className="text-xs font-semibold">Lieu</span><input value={editing.location} onChange={(e) => setEditing({ ...editing, location: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="event-location" /></label>
                         </div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <label className="block"><span className="text-xs font-semibold">Places disponibles (0 = illimité)</span><input type="number" min="0" value={editing.capacity ?? 0} onChange={(e) => setEditing({ ...editing, capacity: parseInt(e.target.value, 10) || 0 })} className="w-full border rounded-lg px-3 py-2" data-testid="event-capacity" /></label>
+                        </div>
                         <label className="block"><span className="text-xs font-semibold">Description FR</span><textarea rows={3} value={editing.description_fr} onChange={(e) => setEditing({ ...editing, description_fr: e.target.value })} className="w-full border rounded-lg px-3 py-2" /></label>
                         <label className="block"><span className="text-xs font-semibold">Description EN</span><textarea rows={3} value={editing.description_en} onChange={(e) => setEditing({ ...editing, description_en: e.target.value })} className="w-full border rounded-lg px-3 py-2" /></label>
                         <div>
@@ -184,6 +196,46 @@ const EventsAdmin = () => {
                         <label className="flex items-center gap-2"><input type="checkbox" checked={editing.published} onChange={(e) => setEditing({ ...editing, published: e.target.checked })} /> Publié</label>
                         <button type="submit" className="btn-primary w-full justify-center" data-testid="event-save"><Save size={16} /> Enregistrer</button>
                     </form>
+                </div>
+            )}
+
+            {participants && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setParticipants(null)}>
+                    <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="participants-modal">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="font-display font-bold text-xl text-brand-dark">Participants</h2>
+                                <p className="text-sm text-gray-500">{participants.event.title_fr} · {participants.list.length}{participants.event.capacity ? ` / ${participants.event.capacity}` : ""} inscrit(s)</p>
+                            </div>
+                            <button type="button" onClick={() => setParticipants(null)} data-testid="participants-close"><X /></button>
+                        </div>
+                        {participants.list.length === 0 ? (
+                            <p className="text-gray-500 text-sm">Aucun inscrit pour le moment.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-left text-gray-400 border-b border-gray-100">
+                                            <th className="py-2 pr-3 font-display font-semibold">Nom</th>
+                                            <th className="py-2 pr-3 font-display font-semibold">Email</th>
+                                            <th className="py-2 pr-3 font-display font-semibold">Téléphone</th>
+                                            <th className="py-2 font-display font-semibold">Inscrit le</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {participants.list.map((p) => (
+                                            <tr key={p.id} className="border-b border-gray-50" data-testid={`participant-${p.id}`}>
+                                                <td className="py-2 pr-3 text-brand-dark font-medium">{p.user_name || "—"}</td>
+                                                <td className="py-2 pr-3"><a href={`mailto:${p.user_email}`} className="text-brand-turquoise hover:underline">{p.user_email}</a></td>
+                                                <td className="py-2 pr-3 text-gray-600">{p.user_phone || "—"}</td>
+                                                <td className="py-2 text-gray-500">{new Date(p.created_at).toLocaleDateString("fr-FR")}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

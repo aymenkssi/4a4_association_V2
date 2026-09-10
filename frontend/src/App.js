@@ -19,6 +19,8 @@ import Donate from "./pages/Donate";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import Login from "./pages/Login";
+import UserLogin from "./pages/UserLogin";
+import Register from "./pages/Register";
 
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
@@ -60,6 +62,8 @@ function App() {
                             <Route path="devenir-membre" element={<Member />} />
                             <Route path="faire-un-don" element={<Donate />} />
                             <Route path="contact" element={<Contact />} />
+                            <Route path="connexion" element={<UserLogin />} />
+                            <Route path="inscription" element={<Register />} />
                             <Route path="mentions-legales" element={<StaticPage slug="legal" />} />
                             <Route path="confidentialite" element={<StaticPage slug="privacy" />} />
                         </Route>

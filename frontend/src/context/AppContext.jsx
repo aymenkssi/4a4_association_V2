@@ -73,6 +73,13 @@ export const AppProvider = ({ children }) => {
         return r.data.user;
     };
 
+    const register = async (payload) => {
+        const r = await api.post("/auth/register", payload);
+        localStorage.setItem("auth_token", r.data.token);
+        setUser(r.data.user);
+        return r.data.user;
+    };
+
     const logout = () => {
         localStorage.removeItem("auth_token");
         setUser(null);
@@ -80,7 +87,7 @@ export const AppProvider = ({ children }) => {
 
     return (
         <AppContext.Provider
-            value={{ lang, changeLang, tr, translations, user, authChecked, login, logout, settings, loadSettings, setSettings }}
+            value={{ lang, changeLang, tr, translations, user, authChecked, login, register, logout, settings, loadSettings, setSettings }}
         >
             {children}
         </AppContext.Provider>

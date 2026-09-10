@@ -1,0 +1,24 @@
+{
+  "summary": "Full backend + frontend testing of the new user-account + event-registration feature. Backend: 11/11 pytest tests pass — /auth/register (RGPD required, min pw, duplicate, success), /auth/login + /auth/me for admin & user, admin-only guards (403 for user on /members and /pages/home; 200 for admin), full event capacity flow (capacity=2, 2 users register, 3rd gets 400 'complet', duplicate 400 'déjà inscrit', DELETE frees a spot, registered_count/spots_left correct on GET /events, my-registrations lists ids, admin sees participant list with name/email/phone). Frontend: /inscription enforces RGPD (register-error shown), successful registration logs in and redirects to /evenements with nav-user-name & nav-logout visible; on /evenements a logged-in user can register (badge event-registered-<id>, unregister button, spots update) and unregister (button reverts); logged-out users see event-login-hint-<id> and clicking S'inscrire redirects to /connexion; admin login redirects to /admin; non-admin user visiting /admin is redirected away to /; admin /admin/events shows event-capacity field and participants-event-<id> button opens participants-modal.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_auth_and_events.py",
+    "/app/test_reports/pytest/auth_events.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is ~1160 lines and mixes auth, pages, events, gallery, members, analytics, email, upload — consider splitting into routers for maintainability (>700-line threshold).",
+    "POST /events/{id}/register sends 2 Resend emails synchronously in the request path (send_email_sync uses requests with 15s timeout each); under email-service latency the endpoint can block up to ~30s. Consider fastapi BackgroundTasks or asyncio.to_thread.",
+    "GET /events/my-registrations is declared before POST /events/{event_id}/register (line ~740 vs 745) — order is fine because FastAPI matches literal 'my-registrations' before {event_id}, but any future refactor should keep literal routes first (was verified).",
+    "AppContext.register() and login() throw raw axios errors; consumers rely on err.response.data.detail — this is consistent but a small typed helper would DRY the two pages.",
+    "Events.jsx doUnregister catch swallows error detail and shows generic 'Erreur.' — could surface backend detail like doRegister does."
+  ],
+  "updated_files": ["/app/backend/tests/test_auth_and_events.py"],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% of tested flows"},
+  "test_credentials": "Admin: admin@4a4dixhuit.org / Admin4a4!2026. Test users are created dynamically per run (TEST_<tag>_*@example.com, testfe_<ts>@example.com, be_check_<ts>@example.com).",
+  "seed_data_creation": "Created transient users + one TEST_<tag> event during runs. Cleaned up afterwards: users collection now only contains admin, orphan event_registrations removed, no TEST_ events remain, seeded 'TEST' 2026-09-14 event is preserved.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New pytest file: /app/backend/tests/test_auth_and_events.py — run with REACT_APP_BACKEND_URL set (or from frontend/.env) and `python -m pytest ... -o addopts=''` because backend/pytest.ini forces xdist -n which requires pytest-xdist and can be overridden. All auth/RGPD/capacity/admin-guard flows are covered."
+}

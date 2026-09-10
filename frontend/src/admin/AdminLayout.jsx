@@ -21,10 +21,11 @@ const AdminLayout = () => {
 
     React.useEffect(() => {
         if (authChecked && !user) navigate("/admin/login");
+        else if (authChecked && user && user.role !== "admin") navigate("/");
     }, [authChecked, user, navigate]);
 
     if (!authChecked) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    if (!user) return null;
+    if (!user || user.role !== "admin") return null;
 
     return (
         <div className="min-h-screen flex bg-gray-50" data-testid="admin-layout">
