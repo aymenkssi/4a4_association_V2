@@ -860,13 +860,16 @@ async def serve_file(path: str):
 
 # ---------------- Members ----------------
 @api.post("/members", response_model=MemberOut)
-async def create_member(data: MemberIn):
+async def create_member(data: MemberIn, background: BackgroundTasks):
     doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso(), "status": "pending"}
     await db.members.insert_one(doc)
     doc.pop("_id", None)
-    # notify
-    html = f"<h3>Nouvelle demande d'adhésion</h3><p><b>Nom :</b> {escape(data.first_name)} {escape(data.last_name)}</p><p><b>Email :</b> {escape(str(data.email))}</p><p><b>Téléphone :</b> {escape(data.phone)}</p><p><b>Adresse :</b> {escape(data.address)}</p><p><b>Intérêts :</b> {escape(', '.join(data.interests))}</p><p><b>Message :</b> {escape(data.message)}</p>"
-    send_email_sync(CONTACT_EMAIL, "Nouvelle adhésion — 4à4 dix-huit", html)
+    # notify admin
+    html = f"<h3>Nouvelle demande d'adhésion</h3><p><b>Nom :</b> {escape(data.first_name)} {escape(data.last_name)}</p><p><b>Email :</b> {escape(str(data.email))}</p><p><b>Téléphone :</b> {escape(data.phone)}</p><p><b>Adresse :</b> {escape(data.address)}</p><p><b>Intérêts :</b> {escape(', '.join(data.interests))}</p><p><b>Message :</b> {escape(data.message)}</p><p>Validez ou refusez cette demande depuis l'administration.</p>"
+    background.add_task(send_email_sync, CONTACT_EMAIL, "Nouvelle adhésion — 4à4 dix-huit", html)
+    # acknowledge applicant
+    ack = f"<h3>Demande d'adhésion bien reçue ✅</h3><p>Bonjour {escape(data.first_name)},</p><p>Nous avons bien reçu votre demande d'adhésion à l'association <b>4à4 dix-huit</b>. Elle est en cours d'examen par notre équipe, et vous recevrez un email dès qu'elle sera traitée.</p><p>Merci pour votre intérêt !<br>L'équipe 4à4 dix-huit</p>"
+    background.add_task(send_email_sync, str(data.email), "Demande d'adhésion reçue — 4à4 dix-huit", ack)
     return doc
 
 @api.get("/members")
@@ -878,6 +881,29 @@ async def list_members(current=Depends(require_admin)):
 async def delete_member(member_id: str, current=Depends(require_admin)):
     r = await db.members.delete_one({"id": member_id})
     return {"deleted": r.deleted_count}
+
+class MemberStatusIn(BaseModel):
+    status: str  # pending | approved | rejected
+
+@api.patch("/members/{member_id}/status")
+async def update_member_status(member_id: str, data: MemberStatusIn, background: BackgroundTasks, current=Depends(require_admin)):
+    if data.status not in ("pending", "approved", "rejected"):
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    m = await db.members.find_one({"id": member_id})
+    if not m:
+        raise HTTPException(status_code=404, detail="Demande introuvable")
+    await db.members.update_one(
+        {"id": member_id},
+        {"$set": {"status": data.status, "validated_at": now_iso(), "validated_by": current.get("email")}},
+    )
+    name = escape(f"{m.get('first_name','')} {m.get('last_name','')}".strip())
+    if data.status == "approved":
+        html = f"<h3>Bienvenue parmi les membres ! 🎉</h3><p>Bonjour {name},</p><p>Nous avons le plaisir de vous confirmer que votre demande d'adhésion à l'association <b>4à4 dix-huit</b> a été <b>validée</b>.</p><p>Merci pour votre engagement. Nous reviendrons vers vous très prochainement avec les prochaines étapes.</p><p>À très bientôt !<br>L'équipe 4à4 dix-huit</p>"
+        background.add_task(send_email_sync, m["email"], "Votre adhésion est validée — 4à4 dix-huit", html)
+    elif data.status == "rejected":
+        html = f"<h3>Concernant votre demande d'adhésion</h3><p>Bonjour {name},</p><p>Nous vous remercions de l'intérêt que vous portez à l'association <b>4à4 dix-huit</b>. Après étude, nous ne sommes malheureusement pas en mesure de donner une suite favorable à votre demande pour le moment.</p><p>N'hésitez pas à nous contacter pour toute question.</p><p>Bien cordialement,<br>L'équipe 4à4 dix-huit</p>"
+        background.add_task(send_email_sync, m["email"], "Votre demande d'adhésion — 4à4 dix-huit", html)
+    return {"ok": True, "status": data.status}
 
 # ---------------- Contact Messages ----------------
 @api.post("/messages", response_model=ContactOut)
