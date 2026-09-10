@@ -31,6 +31,8 @@ import GalleryAdmin from "./admin/GalleryAdmin";
 import MembersAdmin from "./admin/MembersAdmin";
 import MessagesAdmin from "./admin/MessagesAdmin";
 import SettingsAdmin from "./admin/SettingsAdmin";
+import UsersAdmin from "./admin/UsersAdmin";
+import NewslettersAdmin from "./admin/NewslettersAdmin";
 
 const PublicShell = () => (
     <div className="min-h-screen flex flex-col">
@@ -76,7 +78,9 @@ function App() {
                             <Route path="news" element={<NewsAdmin />} />
                             <Route path="gallery" element={<GalleryAdmin />} />
                             <Route path="members" element={<MembersAdmin />} />
+                            <Route path="users" element={<UsersAdmin />} />
                             <Route path="messages" element={<MessagesAdmin />} />
+                            <Route path="newsletters" element={<NewslettersAdmin />} />
                             <Route path="settings" element={<SettingsAdmin />} />
                         </Route>
                     </Routes>

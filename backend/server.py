@@ -155,6 +155,7 @@ class RegisterIn(BaseModel):
     phone: str = ""
     password: str
     rgpd_consent: bool = False
+    newsletter: bool = False
 
 # Pages: rich content per page, bilingual
 class PageContent(BaseModel):
@@ -655,6 +656,7 @@ async def register(data: RegisterIn, background: BackgroundTasks):
     doc = {
         "id": uid, "email": email, "password_hash": hash_password(data.password),
         "name": data.name.strip(), "phone": data.phone.strip(), "role": "user",
+        "newsletter": bool(data.newsletter),
         "rgpd_consent": True, "rgpd_consent_at": now_iso(), "created_at": now_iso(),
     }
     await db.users.insert_one(doc)
@@ -918,6 +920,60 @@ async def get_settings():
 async def update_settings(data: SettingsModel, current=Depends(require_admin)):
     await db.settings.update_one({"_id": "global"}, {"$set": data.model_dump()}, upsert=True)
     return data.model_dump()
+
+# ---------------- Users (admin) ----------------
+class NewsletterToggle(BaseModel):
+    newsletter: bool
+
+@api.get("/admin/users")
+async def list_users(current=Depends(require_admin)):
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(5000)
+    return users
+
+@api.patch("/admin/users/{user_id}/newsletter")
+async def toggle_user_newsletter(user_id: str, data: NewsletterToggle, current=Depends(require_admin)):
+    r = await db.users.update_one({"id": user_id}, {"$set": {"newsletter": data.newsletter}})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    return {"ok": True, "newsletter": data.newsletter}
+
+# ---------------- Newsletters (admin) ----------------
+class NewsletterIn(BaseModel):
+    subject: str
+    body_html: str
+
+@api.get("/newsletters")
+async def list_newsletters(current=Depends(require_admin)):
+    items = await db.newsletters.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return items
+
+@api.get("/newsletters/subscribers-count")
+async def newsletter_subscribers_count(current=Depends(require_admin)):
+    n = await db.users.count_documents({"newsletter": True})
+    return {"count": n}
+
+@api.post("/newsletters")
+async def send_newsletter(data: NewsletterIn, background: BackgroundTasks, current=Depends(require_admin)):
+    if not data.subject.strip() or not data.body_html.strip():
+        raise HTTPException(status_code=400, detail="Le sujet et le contenu sont requis.")
+    subs = await db.users.find({"newsletter": True}, {"_id": 0, "email": 1}).to_list(5000)
+    recipients = [s["email"] for s in subs if s.get("email")]
+    wrapped = (
+        f"<div style=\"font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#333;\">"
+        f"{data.body_html}"
+        f"<hr style=\"border:none;border-top:1px solid #eee;margin:24px 0;\">"
+        f"<p style=\"font-size:12px;color:#888;\">Vous recevez cet email car vous êtes inscrit(e) à la newsletter de l'association 4à4 dix-huit.</p>"
+        f"</div>"
+    )
+    for email in recipients:
+        background.add_task(send_email_sync, email, data.subject, wrapped)
+    doc = {
+        "id": str(uuid.uuid4()), "subject": data.subject, "body_html": data.body_html,
+        "recipients_count": len(recipients), "sent_by": current.get("email"), "created_at": now_iso(),
+    }
+    await db.newsletters.insert_one(doc)
+    doc.pop("_id", None)
+    return {"ok": True, "recipients_count": len(recipients), "newsletter": doc}
 
 @api.get("/sitemap.xml")
 async def sitemap():

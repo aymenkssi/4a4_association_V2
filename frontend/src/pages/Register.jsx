@@ -11,6 +11,7 @@ const Register = () => {
     const location = useLocation();
     const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
     const [rgpd, setRgpd] = useState(false);
+    const [newsletter, setNewsletter] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -27,7 +28,7 @@ const Register = () => {
         }
         setLoading(true);
         try {
-            const u = await register({ ...form, rgpd_consent: rgpd });
+            const u = await register({ ...form, rgpd_consent: rgpd, newsletter });
             toast.success(fr ? "Compte créé, bienvenue !" : "Account created, welcome!");
             navigate(u.role === "admin" ? "/admin" : from);
         } catch (err) {
@@ -68,6 +69,10 @@ const Register = () => {
                             {fr ? "J'accepte que mes données soient traitées conformément à la " : "I agree that my data is processed in accordance with the "}
                             <Link to="/confidentialite" target="_blank" className="text-brand-turquoise font-semibold hover:underline">{fr ? "politique de confidentialité (RGPD)" : "privacy policy (GDPR)"}</Link>.
                         </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} className="mt-1" data-testid="register-newsletter" />
+                        <span>{fr ? "Je souhaite recevoir la newsletter de l'association (actualités et événements)." : "I want to receive the association's newsletter (news and events)."}</span>
                     </label>
                     {error && <p className="text-brand-red text-sm" data-testid="register-error">{error}</p>}
                     <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-60" data-testid="register-submit">

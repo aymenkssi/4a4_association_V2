@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { LayoutDashboard, FileText, Calendar, Newspaper, Image, Users, MessageSquare, Settings, LogOut, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, FileText, Calendar, Newspaper, Image, Users, MessageSquare, Settings, LogOut, ArrowLeft, UserCog, Mails } from "lucide-react";
 import Logo from "../components/Logo";
 
 const sections = [
@@ -11,7 +11,9 @@ const sections = [
     { to: "/admin/news", key: "news", icon: Newspaper },
     { to: "/admin/gallery", key: "gallery", icon: Image },
     { to: "/admin/members", key: "members", icon: Users },
+    { to: "/admin/users", key: "users", icon: UserCog },
     { to: "/admin/messages", key: "messages", icon: MessageSquare },
+    { to: "/admin/newsletters", key: "newsletters", icon: Mails },
     { to: "/admin/settings", key: "settings", icon: Settings },
 ];
 
