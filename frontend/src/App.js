@@ -7,6 +7,7 @@ import { AppProvider } from "./context/AppContext";
 import { Header, Footer } from "./components/Layout";
 import FloatingSocialBar from "./components/FloatingSocialBar";
 import VisitorTracker from "./components/VisitorTracker";
+import CookieConsent from "./components/CookieConsent";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -43,6 +44,7 @@ const PublicShell = () => (
             <Outlet />
         </main>
         <Footer />
+        <CookieConsent />
     </div>
 );
 
