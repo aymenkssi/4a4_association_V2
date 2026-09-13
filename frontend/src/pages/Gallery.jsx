@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import api, { mediaUrl } from "../lib/api";
 import { useApp } from "../context/AppContext";
 import { Play, X } from "lucide-react";
 import SEO from "../components/SEO";
 
 const Gallery = () => {
-    const { lang, tr } = useApp();
+    const { lang, tr, settings } = useApp();
     const [items, setItems] = useState([]);
     const [active, setActive] = useState(null);
     const [filter, setFilter] = useState("all");
 
     useEffect(() => { api.get("/gallery").then((r) => setItems(r.data || [])).catch(() => {}); }, []);
+
+    if (settings.gallery_enabled === false) return <Navigate to="/" replace />;
 
     const cats = Array.from(new Set(items.map((i) => i.category))).filter(Boolean);
     const filtered = filter === "all" ? items : items.filter((i) => i.category === filter);

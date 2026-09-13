@@ -255,6 +255,7 @@ class SettingsModel(BaseModel):
     tiktok_url: str = ""
     whatsapp_url: str = ""
     social_bar_position: str = "right"  # "right" | "left" | "hidden"
+    gallery_enabled: bool = True
     site_title_fr: str = "4à4 dix-huit"
     site_title_en: str = "4à4 dix-huit"
     logo_url: str = "/logo.png"

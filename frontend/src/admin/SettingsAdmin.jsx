@@ -80,6 +80,21 @@ const SettingsAdmin = () => {
                 <label className="block"><span className="text-xs font-semibold">Meta description (FR)</span><textarea rows={2} value={form.meta_description_fr || ""} onChange={(e) => set("meta_description_fr", e.target.value)} className="w-full border rounded-lg px-3 py-2" data-testid="settings-meta-fr" /></label>
                 <label className="block"><span className="text-xs font-semibold">Meta description (EN)</span><textarea rows={2} value={form.meta_description_en || ""} onChange={(e) => set("meta_description_en", e.target.value)} className="w-full border rounded-lg px-3 py-2" data-testid="settings-meta-en" /></label>
 
+                <h2 className="font-display font-bold text-lg border-b pb-2 pt-4">Affichage du site</h2>
+                <label className="flex items-center justify-between gap-4 bg-brand-bg rounded-xl px-4 py-3" data-testid="settings-gallery-enabled-row">
+                    <span>
+                        <span className="text-sm font-display font-semibold block">Afficher la galerie</span>
+                        <span className="text-xs text-gray-500">Active ou masque la page Galerie et ses liens (menu + pied de page).</span>
+                    </span>
+                    <input
+                        type="checkbox"
+                        checked={form.gallery_enabled !== false}
+                        onChange={(e) => set("gallery_enabled", e.target.checked)}
+                        className="w-5 h-5 accent-brand-turquoise cursor-pointer"
+                        data-testid="settings-gallery-enabled"
+                    />
+                </label>
+
                 <h2 className="font-display font-bold text-lg border-b pb-2 pt-4">Contact & don</h2>
                 <label className="block"><span className="text-xs font-semibold">Lien HelloAsso (don)</span><input value={form.helloasso_url || ""} onChange={(e) => set("helloasso_url", e.target.value)} className="w-full border rounded-lg px-3 py-2" data-testid="settings-helloasso" /></label>
                 <label className="block"><span className="text-xs font-semibold">Email contact</span><input value={form.contact_email || ""} onChange={(e) => set("contact_email", e.target.value)} className="w-full border rounded-lg px-3 py-2" data-testid="settings-email" /></label>

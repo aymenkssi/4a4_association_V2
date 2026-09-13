@@ -21,6 +21,7 @@ export const AppProvider = ({ children }) => {
         tiktok_url: "",
         whatsapp_url: "",
         social_bar_position: "right",
+        gallery_enabled: true,
         site_title_fr: "4à4 dix-huit",
         site_title_en: "4à4 dix-huit",
         logo_url: "/logo.png",

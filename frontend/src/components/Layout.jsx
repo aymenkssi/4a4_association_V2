@@ -18,9 +18,10 @@ const navItems = [
 ];
 
 export const Header = () => {
-    const { tr, lang, changeLang, user, logout } = useApp();
+    const { tr, lang, changeLang, user, logout, settings } = useApp();
     const [open, setOpen] = useState(false);
     const location = useLocation();
+    const items = navItems.filter((n) => n.key !== "gallery" || settings.gallery_enabled !== false);
 
     React.useEffect(() => {
         setOpen(false);
@@ -38,7 +39,7 @@ export const Header = () => {
                 </Link>
 
                 <nav className="hidden lg:flex items-center gap-1">
-                    {navItems.map((n) => (
+                    {items.map((n) => (
                         <NavLink
                             key={n.key}
                             to={n.to}
@@ -98,7 +99,7 @@ export const Header = () => {
             {open && (
                 <div className="lg:hidden border-t border-gray-100 bg-white">
                     <div className="px-4 py-3 flex flex-col gap-1">
-                        {navItems.map((n) => (
+                        {items.map((n) => (
                             <NavLink
                                 key={n.key}
                                 to={n.to}
@@ -166,7 +167,7 @@ export const Footer = () => {
                         <li><Link to="/a-propos" className="hover:text-brand-turquoise" data-testid="footer-about">{tr("nav.about")}</Link></li>
                         <li><Link to="/nos-actions" className="hover:text-brand-turquoise" data-testid="footer-actions">{tr("nav.actions")}</Link></li>
                         <li><Link to="/evenements" className="hover:text-brand-turquoise" data-testid="footer-events">{tr("nav.events")}</Link></li>
-                        <li><Link to="/galerie" className="hover:text-brand-turquoise" data-testid="footer-gallery">{tr("nav.gallery")}</Link></li>
+                        {settings.gallery_enabled !== false && <li><Link to="/galerie" className="hover:text-brand-turquoise" data-testid="footer-gallery">{tr("nav.gallery")}</Link></li>}
                         <li><Link to="/devenir-membre" className="hover:text-brand-turquoise" data-testid="footer-member">{tr("nav.member")}</Link></li>
                     </ul>
                 </div>
