@@ -16,6 +16,7 @@ import AxisEvents from "./pages/AxisEvents";
 import Events from "./pages/Events";
 import News from "./pages/News";
 import Gallery from "./pages/Gallery";
+import Team from "./pages/Team";
 import Member from "./pages/Member";
 import Donate from "./pages/Donate";
 import Contact from "./pages/Contact";
@@ -30,6 +31,7 @@ import PageEditor from "./admin/PageEditor";
 import EventsAdmin from "./admin/EventsAdmin";
 import NewsAdmin from "./admin/NewsAdmin";
 import GalleryAdmin from "./admin/GalleryAdmin";
+import TeamAdmin from "./admin/TeamAdmin";
 import MembersAdmin from "./admin/MembersAdmin";
 import MessagesAdmin from "./admin/MessagesAdmin";
 import SettingsAdmin from "./admin/SettingsAdmin";
@@ -65,6 +67,7 @@ function App() {
                             <Route path="evenements" element={<Events />} />
                             <Route path="actualites" element={<News />} />
                             <Route path="galerie" element={<Gallery />} />
+                            <Route path="equipe" element={<Team />} />
                             <Route path="devenir-membre" element={<Member />} />
                             <Route path="faire-un-don" element={<Donate />} />
                             <Route path="contact" element={<Contact />} />
@@ -81,6 +84,7 @@ function App() {
                             <Route path="events" element={<EventsAdmin />} />
                             <Route path="news" element={<NewsAdmin />} />
                             <Route path="gallery" element={<GalleryAdmin />} />
+                            <Route path="team" element={<TeamAdmin />} />
                             <Route path="members" element={<MembersAdmin />} />
                             <Route path="users" element={<UsersAdmin />} />
                             <Route path="messages" element={<MessagesAdmin />} />

@@ -12,6 +12,7 @@ const navItems = [
     { to: "/evenements", key: "events" },
     { to: "/actualites", key: "news" },
     { to: "/galerie", key: "gallery" },
+    { to: "/equipe", key: "team" },
     { to: "/devenir-membre", key: "member" },
     { to: "/faire-un-don", key: "donate", action: true },
     { to: "/contact", key: "contact" },

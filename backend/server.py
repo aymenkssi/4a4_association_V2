@@ -215,6 +215,19 @@ class GalleryItemOut(GalleryItemIn):
     id: str
     created_at: str
 
+# Team
+class TeamMemberIn(BaseModel):
+    name: str
+    role: str = ""
+    nature: str = "staff"  # staff | intervenant
+    photo_url: str = ""
+    bio: str = ""
+    order: int = 0
+
+class TeamMemberOut(TeamMemberIn):
+    id: str
+    created_at: str
+
 # Members signup
 class MemberIn(BaseModel):
     first_name: str
@@ -831,6 +844,33 @@ async def create_gallery_item(data: GalleryItemIn, current=Depends(require_admin
 @api.delete("/gallery/{item_id}")
 async def delete_gallery_item(item_id: str, current=Depends(require_admin)):
     r = await db.gallery.delete_one({"id": item_id})
+    return {"deleted": r.deleted_count}
+
+# ---------------- Team ----------------
+@api.get("/team")
+async def list_team(nature: Optional[str] = None):
+    q = {"nature": nature} if nature else {}
+    items = await db.team.find(q, {"_id": 0}).sort([("order", 1), ("created_at", 1)]).to_list(500)
+    return items
+
+@api.post("/team", response_model=TeamMemberOut)
+async def create_team_member(data: TeamMemberIn, current=Depends(require_admin)):
+    doc = {**data.model_dump(), "id": str(uuid.uuid4()), "created_at": now_iso()}
+    await db.team.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api.put("/team/{member_id}", response_model=TeamMemberOut)
+async def update_team_member(member_id: str, data: TeamMemberIn, current=Depends(require_admin)):
+    await db.team.update_one({"id": member_id}, {"$set": data.model_dump()})
+    doc = await db.team.find_one({"id": member_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Team member not found")
+    return doc
+
+@api.delete("/team/{member_id}")
+async def delete_team_member(member_id: str, current=Depends(require_admin)):
+    r = await db.team.delete_one({"id": member_id})
     return {"deleted": r.deleted_count}
 
 # ---------------- Upload ----------------
