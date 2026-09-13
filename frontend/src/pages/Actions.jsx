@@ -82,15 +82,37 @@ const Actions = () => {
                             </h2>
                         </div>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {c.neighborhood_events.map((ev, i) => (
-                                <div key={ev.key || i} className="bg-brand-bg rounded-3xl p-8 card-lift text-center" data-testid={`neighborhood-event-${ev.key || i}`}>
-                                    <div className="flex justify-center mb-4">
-                                        <ActivityBlob keyName={ev.key} color={ev.color} idx={i} size={110} />
+                            {c.neighborhood_events.map((ev, i) => {
+                                const inner = (
+                                    <>
+                                        <div className="flex justify-center mb-4">
+                                            <ActivityBlob keyName={ev.key} color={ev.color} idx={i} size={110} />
+                                        </div>
+                                        <h3 className="font-display font-bold text-xl mb-2" style={{ color: ev.color }}>{ev.title}</h3>
+                                        <p className="text-gray-600 leading-relaxed text-sm">{ev.text}</p>
+                                    </>
+                                );
+                                if (ev.link) {
+                                    const external = /^https?:\/\//i.test(ev.link);
+                                    return (
+                                        <a
+                                            key={ev.key || i}
+                                            href={ev.link}
+                                            target={external ? "_blank" : undefined}
+                                            rel={external ? "noopener noreferrer" : undefined}
+                                            className="bg-brand-bg rounded-3xl p-8 card-lift text-center block cursor-pointer transition-shadow hover:shadow-lg"
+                                            data-testid={`neighborhood-event-${ev.key || i}`}
+                                        >
+                                            {inner}
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <div key={ev.key || i} className="bg-brand-bg rounded-3xl p-8 card-lift text-center" data-testid={`neighborhood-event-${ev.key || i}`}>
+                                        {inner}
                                     </div>
-                                    <h3 className="font-display font-bold text-xl mb-2" style={{ color: ev.color }}>{ev.title}</h3>
-                                    <p className="text-gray-600 leading-relaxed text-sm">{ev.text}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </section>

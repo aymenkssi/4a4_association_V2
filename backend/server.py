@@ -419,12 +419,12 @@ DEFAULT_PAGES: Dict[str, PageContent] = {
             "neighborhood_title": "Vie du quartier",
             "neighborhood_subtitle": "Des rendez-vous qui animent le 18e",
             "neighborhood_events": [
-                {"key": "place_du_village", "title": "Place du Village", "text": "Espace d'accueil et d'ateliers familiaux : couture, cuisine, jardinage, yoga.", "color": "#39B8B2"},
-                {"key": "happy_market", "title": "Happy Market", "text": "Marché solidaire et créatif animé par les habitants.", "color": "#E6DD08"},
-                {"key": "vide_grenier", "title": "Vide-grenier", "text": "Brocante de quartier pour donner une seconde vie aux objets.", "color": "#D91012"},
-                {"key": "passage_art", "title": "Passage à l'Art", "text": "Parcours d'art éphémère dans les rues du quartier.", "color": "#B63CCC"},
-                {"key": "mon_premier_festival", "title": "Mon Premier Festival", "text": "Festival jeune public en partenariat avec la Ville de Paris.", "color": "#E6DD08"},
-                {"key": "fete_de_quartier", "title": "Fête de quartier", "text": "Le grand rendez-vous annuel, musiques et stands gourmands.", "color": "#39B8B2"},
+                {"key": "place_du_village", "title": "Place du Village", "text": "Espace d'accueil et d'ateliers familiaux : couture, cuisine, jardinage, yoga.", "color": "#39B8B2", "link": ""},
+                {"key": "happy_market", "title": "Happy Market", "text": "Marché solidaire et créatif animé par les habitants.", "color": "#E6DD08", "link": ""},
+                {"key": "vide_grenier", "title": "Vide-grenier", "text": "Brocante de quartier pour donner une seconde vie aux objets.", "color": "#D91012", "link": ""},
+                {"key": "passage_art", "title": "Passage à l'Art", "text": "Parcours d'art éphémère dans les rues du quartier.", "color": "#B63CCC", "link": ""},
+                {"key": "mon_premier_festival", "title": "Mon Premier Festival", "text": "Festival jeune public en partenariat avec la Ville de Paris.", "color": "#E6DD08", "link": ""},
+                {"key": "fete_de_quartier", "title": "Fête de quartier", "text": "Le grand rendez-vous annuel, musiques et stands gourmands.", "color": "#39B8B2", "link": ""},
             ],
         },
         en={
@@ -449,12 +449,12 @@ DEFAULT_PAGES: Dict[str, PageContent] = {
             "neighborhood_title": "Neighborhood life",
             "neighborhood_subtitle": "Recurring gatherings that bring the 18th alive",
             "neighborhood_events": [
-                {"key": "place_du_village", "title": "Place du Village", "text": "A drop-in space for family workshops: sewing, cooking, gardening, yoga.", "color": "#39B8B2"},
-                {"key": "happy_market", "title": "Happy Market", "text": "A solidary creative market run by local residents.", "color": "#E6DD08"},
-                {"key": "vide_grenier", "title": "Garage sale", "text": "Neighborhood flea market to give items a second life.", "color": "#D91012"},
-                {"key": "passage_art", "title": "Passage à l'Art", "text": "An ephemeral art walk through the streets of the neighborhood.", "color": "#B63CCC"},
-                {"key": "mon_premier_festival", "title": "Mon Premier Festival", "text": "A kids' film festival in partnership with the City of Paris.", "color": "#E6DD08"},
-                {"key": "fete_de_quartier", "title": "Neighborhood party", "text": "The annual highlight — live music and food stands.", "color": "#39B8B2"},
+                {"key": "place_du_village", "title": "Place du Village", "text": "A drop-in space for family workshops: sewing, cooking, gardening, yoga.", "color": "#39B8B2", "link": ""},
+                {"key": "happy_market", "title": "Happy Market", "text": "A solidary creative market run by local residents.", "color": "#E6DD08", "link": ""},
+                {"key": "vide_grenier", "title": "Garage sale", "text": "Neighborhood flea market to give items a second life.", "color": "#D91012", "link": ""},
+                {"key": "passage_art", "title": "Passage à l'Art", "text": "An ephemeral art walk through the streets of the neighborhood.", "color": "#B63CCC", "link": ""},
+                {"key": "mon_premier_festival", "title": "Mon Premier Festival", "text": "A kids' film festival in partnership with the City of Paris.", "color": "#E6DD08", "link": ""},
+                {"key": "fete_de_quartier", "title": "Neighborhood party", "text": "The annual highlight — live music and food stands.", "color": "#39B8B2", "link": ""},
             ],
         },
     ),
@@ -605,6 +605,13 @@ async def startup():
                     if k not in existing_content.get(lang, {}):
                         existing_content.setdefault(lang, {})[k] = v
                         updated = True
+                # Ensure each neighborhood_events item has a 'link' field (forward-compat)
+                nb = existing_content.get(lang, {}).get("neighborhood_events")
+                if isinstance(nb, list):
+                    for item in nb:
+                        if isinstance(item, dict) and "link" not in item:
+                            item["link"] = ""
+                            updated = True
             if updated:
                 await db.pages.update_one({"slug": slug}, {"$set": {"content": existing_content, "updated_at": now_iso()}})
     # Seed settings
