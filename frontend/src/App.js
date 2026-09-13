@@ -12,6 +12,7 @@ import CookieConsent from "./components/CookieConsent";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Actions from "./pages/Actions";
+import AxisEvents from "./pages/AxisEvents";
 import Events from "./pages/Events";
 import News from "./pages/News";
 import Gallery from "./pages/Gallery";
@@ -60,6 +61,7 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="a-propos" element={<About />} />
                             <Route path="nos-actions" element={<Actions />} />
+                            <Route path="nos-actions/axe/:index" element={<AxisEvents />} />
                             <Route path="evenements" element={<Events />} />
                             <Route path="actualites" element={<News />} />
                             <Route path="galerie" element={<Gallery />} />
