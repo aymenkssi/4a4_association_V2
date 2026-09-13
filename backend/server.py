@@ -178,6 +178,7 @@ class EventIn(BaseModel):
     description_en: str = ""
     date: str  # ISO
     location: str = ""
+    category: str = ""
     image_url: str = ""
     capacity: int = 0  # 0 = illimité
     published: bool = True

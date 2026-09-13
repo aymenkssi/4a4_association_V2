@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Edit, X, Save, CalendarClock, CheckCircle2, Clock, CalendarDays, FileText, Users } from "lucide-react";
 import MediaPicker from "./MediaPicker";
 
-const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", image_url: "", capacity: 0, published: true };
+const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", category: "", image_url: "", capacity: 0, published: true };
 
 const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 
@@ -22,6 +22,13 @@ const EventsAdmin = () => {
     const [items, setItems] = useState([]);
     const [editing, setEditing] = useState(null);
     const [participants, setParticipants] = useState(null);
+    const [axes, setAxes] = useState([]);
+
+    useEffect(() => {
+        api.get("/pages/actions")
+            .then((r) => setAxes((r.data?.content?.fr?.axes || []).map((a) => a.title).filter(Boolean)))
+            .catch(() => {});
+    }, []);
 
     const viewParticipants = async (ev) => {
         try {
@@ -183,6 +190,22 @@ const EventsAdmin = () => {
                         <div className="grid sm:grid-cols-2 gap-3">
                             <label className="block"><span className="text-xs font-semibold">Date</span><input type="datetime-local" required value={editing.date?.slice(0, 16)} onChange={(e) => setEditing({ ...editing, date: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="event-date" /></label>
                             <label className="block"><span className="text-xs font-semibold">Lieu</span><input value={editing.location} onChange={(e) => setEditing({ ...editing, location: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="event-location" /></label>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <label className="block">
+                                <span className="text-xs font-semibold">Catégorie (Nos quatre axes)</span>
+                                <select
+                                    value={editing.category || ""}
+                                    onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+                                    className="w-full border rounded-lg px-3 py-2 bg-white"
+                                    data-testid="event-category"
+                                >
+                                    <option value="">— Sélectionner un axe —</option>
+                                    {axes.map((ax) => (
+                                        <option key={ax} value={ax}>{ax}</option>
+                                    ))}
+                                </select>
+                            </label>
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3">
                             <label className="block"><span className="text-xs font-semibold">Places disponibles (0 = illimité)</span><input type="number" min="0" value={editing.capacity ?? 0} onChange={(e) => setEditing({ ...editing, capacity: parseInt(e.target.value, 10) || 0 })} className="w-full border rounded-lg px-3 py-2" data-testid="event-capacity" /></label>
