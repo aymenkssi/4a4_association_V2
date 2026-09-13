@@ -5,6 +5,7 @@ import { useApp } from "../context/AppContext";
 import { Calendar, MapPin, Users, Check, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "../components/SEO";
+import { buildAxisColorMap, axisColor } from "../constants/axes";
 
 const Events = () => {
     const { lang, tr, user } = useApp();
@@ -12,10 +13,17 @@ const Events = () => {
     const [items, setItems] = useState([]);
     const [myRegs, setMyRegs] = useState([]);
     const [busy, setBusy] = useState(null);
+    const [axisColors, setAxisColors] = useState({});
     const fr = lang === "fr";
 
     const loadEvents = useCallback(() => {
         api.get("/events").then((r) => setItems(r.data || [])).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        api.get("/pages/actions")
+            .then((r) => setAxisColors(buildAxisColorMap(r.data?.content?.fr?.axes || [])))
+            .catch(() => {});
     }, []);
 
     const loadMyRegs = useCallback(() => {
@@ -104,11 +112,19 @@ const Events = () => {
         );
     };
 
-    const renderItem = (ev, isPast) => (
-        <article key={ev.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 card-lift flex flex-col" data-testid={`event-${ev.id}`}>
+    const renderItem = (ev, isPast) => {
+        const color = axisColor(axisColors, ev.category);
+        return (
+        <article key={ev.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 card-lift flex flex-col" style={{ borderTop: `4px solid ${color}` }} data-testid={`event-${ev.id}`}>
             {ev.image_url && <div className="aspect-video overflow-hidden"><img src={mediaUrl(ev.image_url)} alt="" className="w-full h-full object-cover" /></div>}
             <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-2 text-brand-turquoise font-display font-semibold text-sm mb-2">
+                {ev.category && (
+                    <span className="inline-flex self-start items-center gap-1.5 text-xs font-display font-bold px-3 py-1 rounded-full mb-3" style={{ backgroundColor: `${color}1f`, color }} data-testid={`event-category-${ev.id}`}>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                        {ev.category}
+                    </span>
+                )}
+                <div className="flex items-center gap-2 font-display font-semibold text-sm mb-2" style={{ color }}>
                     <Calendar size={16} />
                     {new Date(ev.date).toLocaleDateString(fr ? "fr-FR" : "en-US", { day: "2-digit", month: "long", year: "numeric" })}
                 </div>
@@ -118,7 +134,8 @@ const Events = () => {
                 {!isPast && renderRegistration(ev)}
             </div>
         </article>
-    );
+        );
+    };
 
     return (
         <div data-testid="events-page" className="bg-white">

@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit, X, Save, CalendarClock, CheckCircle2, Clock, CalendarDays, FileText, Users } from "lucide-react";
 import MediaPicker from "./MediaPicker";
+import { buildAxisColorMap, axisColor } from "../constants/axes";
 
 const empty = { title_fr: "", title_en: "", description_fr: "", description_en: "", date: "", location: "", category: "", image_url: "", capacity: 0, published: true };
 
@@ -23,10 +24,15 @@ const EventsAdmin = () => {
     const [editing, setEditing] = useState(null);
     const [participants, setParticipants] = useState(null);
     const [axes, setAxes] = useState([]);
+    const [axisColors, setAxisColors] = useState({});
 
     useEffect(() => {
         api.get("/pages/actions")
-            .then((r) => setAxes((r.data?.content?.fr?.axes || []).map((a) => a.title).filter(Boolean)))
+            .then((r) => {
+                const list = r.data?.content?.fr?.axes || [];
+                setAxes(list.map((a) => a.title).filter(Boolean));
+                setAxisColors(buildAxisColorMap(list));
+            })
             .catch(() => {});
     }, []);
 
@@ -160,9 +166,12 @@ const EventsAdmin = () => {
 
             <div className="grid gap-3">
                 {items.map((ev) => (
-                    <div key={ev.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-between" data-testid={`admin-event-${ev.id}`}>
+                    <div key={ev.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-between" style={{ borderLeft: `5px solid ${axisColor(axisColors, ev.category)}` }} data-testid={`admin-event-${ev.id}`}>
                         <div>
-                            <div className="font-display font-bold text-brand-dark">{ev.title_fr}</div>
+                            <div className="font-display font-bold text-brand-dark flex items-center gap-2">
+                                {ev.title_fr}
+                                {ev.category && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${axisColor(axisColors, ev.category)}1f`, color: axisColor(axisColors, ev.category) }} data-testid={`admin-event-category-${ev.id}`}>{ev.category}</span>}
+                            </div>
                             <div className="text-sm text-gray-500">{new Date(ev.date).toLocaleDateString("fr-FR")} · {ev.location}</div>
                             <div className="text-xs text-gray-400">{ev.published ? "Publié" : "Brouillon"} · {ev.registered_count || 0} inscrit(s){ev.capacity ? ` / ${ev.capacity} places` : " (illimité)"}</div>
                         </div>
