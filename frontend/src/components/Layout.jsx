@@ -30,7 +30,7 @@ export const Header = () => {
 
     return (
         <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
                 <Link to="/" className="flex items-center gap-3 flex-shrink-0" data-testid="nav-logo">
                     <Logo size={48} />
                     <div className="leading-tight whitespace-nowrap">
@@ -39,14 +39,14 @@ export const Header = () => {
                     </div>
                 </Link>
 
-                <nav className="hidden lg:flex items-center gap-1">
+                <nav className="hidden 2xl:flex items-center gap-1">
                     {items.map((n) => (
                         <NavLink
                             key={n.key}
                             to={n.to}
                             data-testid={`nav-${n.key}`}
                             className={({ isActive }) =>
-                                `px-3 py-2 rounded-full text-sm font-display font-medium transition-colors whitespace-nowrap ${
+                                `px-2.5 py-2 rounded-full text-sm font-display font-medium transition-colors whitespace-nowrap ${
                                     n.action
                                         ? "bg-brand-red text-white hover:bg-[#b80e10] ml-2"
                                         : isActive
@@ -88,7 +88,7 @@ export const Header = () => {
                 </nav>
 
                 <button
-                    className="lg:hidden p-2 rounded-full hover:bg-gray-100"
+                    className="2xl:hidden p-2 rounded-full hover:bg-gray-100"
                     onClick={() => setOpen((v) => !v)}
                     data-testid="mobile-menu-toggle"
                     aria-label="Menu"
@@ -98,7 +98,7 @@ export const Header = () => {
             </div>
 
             {open && (
-                <div className="lg:hidden border-t border-gray-100 bg-white">
+                <div className="2xl:hidden border-t border-gray-100 bg-white">
                     <div className="px-4 py-3 flex flex-col gap-1">
                         {items.map((n) => (
                             <NavLink
