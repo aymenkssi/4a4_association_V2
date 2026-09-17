@@ -4,16 +4,25 @@ import { useApp } from "../context/AppContext";
 import { UserRound } from "lucide-react";
 import SEO from "../components/SEO";
 
-const MemberCard = ({ m }) => (
-    <div className="bg-white rounded-3xl p-6 border border-gray-100 card-lift text-center" data-testid={`team-member-${m.id}`}>
-        <div className="w-28 h-28 mx-auto rounded-full overflow-hidden bg-brand-bg flex items-center justify-center mb-4">
-            {m.photo_url ? <img src={mediaUrl(m.photo_url)} alt={m.name} className="w-full h-full object-cover" /> : <UserRound className="text-gray-300" size={48} />}
+const MemberCard = ({ m }) => {
+    if (m.display_mode === "image" && m.detail_image_url) {
+        return (
+            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 card-lift" data-testid={`team-member-${m.id}`}>
+                <img src={mediaUrl(m.detail_image_url)} alt={m.name} className="w-full h-auto object-contain" />
+            </div>
+        );
+    }
+    return (
+        <div className="bg-white rounded-3xl p-6 border border-gray-100 card-lift text-center" data-testid={`team-member-${m.id}`}>
+            <div className="w-28 h-28 mx-auto rounded-full overflow-hidden bg-brand-bg flex items-center justify-center mb-4">
+                {m.photo_url ? <img src={mediaUrl(m.photo_url)} alt={m.name} className="w-full h-full object-cover" /> : <UserRound className="text-gray-300" size={48} />}
+            </div>
+            <h3 className="font-display font-bold text-xl text-brand-dark">{m.name}</h3>
+            {m.role && <div className="text-brand-turquoise font-display font-semibold text-sm mb-2">{m.role}</div>}
+            {m.bio && <p className="text-gray-600 leading-relaxed text-sm">{m.bio}</p>}
         </div>
-        <h3 className="font-display font-bold text-xl text-brand-dark">{m.name}</h3>
-        {m.role && <div className="text-brand-turquoise font-display font-semibold text-sm mb-2">{m.role}</div>}
-        {m.bio && <p className="text-gray-600 leading-relaxed text-sm">{m.bio}</p>}
-    </div>
-);
+    );
+};
 
 const Team = () => {
     const { lang } = useApp();

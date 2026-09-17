@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Edit, X, Save, UserRound } from "lucide-react";
 import MediaPicker from "./MediaPicker";
 
-const empty = { name: "", role: "", nature: "staff", photo_url: "", bio: "", order: 0 };
+const empty = { name: "", role: "", nature: "staff", photo_url: "", display_mode: "bio", bio: "", detail_image_url: "", order: 0 };
 
 const NATURE_LABEL = { staff: "Staff", intervenant: "Intervenant" };
 
@@ -102,7 +102,22 @@ const TeamAdmin = () => {
                             <MediaPicker value={editing.photo_url} onChange={(v) => setEditing({ ...editing, photo_url: v })} accept="image/*" testId="team-photo" />
                             {editing.photo_url && <img src={mediaUrl(editing.photo_url)} alt="" className="mt-2 w-20 h-20 object-cover rounded-full border border-gray-200" />}
                         </div>
-                        <label className="block"><span className="text-xs font-semibold">Mini bio</span><textarea rows={3} value={editing.bio} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="team-bio" /></label>
+                        <label className="block">
+                            <span className="text-xs font-semibold">Type de fiche</span>
+                            <select value={editing.display_mode || "bio"} onChange={(e) => setEditing({ ...editing, display_mode: e.target.value })} className="w-full border rounded-lg px-3 py-2 bg-white" data-testid="team-display-mode">
+                                <option value="bio">Description (texte)</option>
+                                <option value="image">Image détaillée (contient tous les détails)</option>
+                            </select>
+                        </label>
+                        {(editing.display_mode || "bio") === "image" ? (
+                            <div>
+                                <span className="text-xs font-semibold">Image détaillée</span>
+                                <MediaPicker value={editing.detail_image_url} onChange={(v) => setEditing({ ...editing, detail_image_url: v })} accept="image/*" testId="team-detail-image" />
+                                {editing.detail_image_url && <img src={mediaUrl(editing.detail_image_url)} alt="" className="mt-2 w-full max-h-64 object-contain rounded-lg border border-gray-200 bg-gray-50" />}
+                            </div>
+                        ) : (
+                            <label className="block"><span className="text-xs font-semibold">Mini bio</span><textarea rows={3} value={editing.bio} onChange={(e) => setEditing({ ...editing, bio: e.target.value })} className="w-full border rounded-lg px-3 py-2" data-testid="team-bio" /></label>
+                        )}
                         <label className="block"><span className="text-xs font-semibold">Ordre d'affichage</span><input type="number" value={editing.order ?? 0} onChange={(e) => setEditing({ ...editing, order: parseInt(e.target.value, 10) || 0 })} className="w-full border rounded-lg px-3 py-2" data-testid="team-order" /></label>
                         <button type="submit" className="btn-primary w-full justify-center" data-testid="team-save"><Save size={16} /> Enregistrer</button>
                     </form>

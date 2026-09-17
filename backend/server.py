@@ -221,7 +221,9 @@ class TeamMemberIn(BaseModel):
     role: str = ""
     nature: str = "staff"  # staff | intervenant
     photo_url: str = ""
+    display_mode: str = "bio"  # bio | image
     bio: str = ""
+    detail_image_url: str = ""
     order: int = 0
 
 class TeamMemberOut(TeamMemberIn):
