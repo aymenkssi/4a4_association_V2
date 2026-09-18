@@ -14,7 +14,7 @@ const MediaPicker = ({ value, onChange, accept = "image/*", testId = "media-pick
         try {
             const fd = new FormData();
             fd.append("file", f);
-            const r = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+           const r = await api.post("/upload", fd);
             onChange(r.data.url);
             toast.success("Fichier téléversé");
         } catch (err) {
