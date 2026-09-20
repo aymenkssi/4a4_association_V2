@@ -159,6 +159,11 @@ export const Footer = () => {
                         <Logo size={48} />
                         <div className="font-display text-white font-bold text-lg">4à4 dix-huit</div>
                     </div>
+                    <img
+                        src="/leo-lagrange-affiliation.png"
+                        alt="Association affiliée à la Fédération Léo Lagrange"
+                        className="bg-white rounded-xl p-2 mb-4 h-12 w-auto"
+                    />
                     <p className="text-sm text-gray-400 italic">{tr("footer.tagline")}</p>
                 </div>
 
