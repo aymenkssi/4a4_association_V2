@@ -11,6 +11,7 @@ const Register = () => {
     const location = useLocation();
     const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
     const [rgpd, setRgpd] = useState(false);
+    const [charter, setCharter] = useState(false);
     const [newsletter, setNewsletter] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -26,9 +27,13 @@ const Register = () => {
             setError(fr ? "Vous devez accepter la politique de confidentialité (RGPD)." : "You must accept the privacy policy (GDPR).");
             return;
         }
+        if (!charter) {
+            setError(fr ? "Vous devez confirmer avoir pris connaissance de la Charte de respect et de protection des enfants." : "You must confirm that you have read the Child Respect and Protection Charter.");
+            return;
+        }
         setLoading(true);
         try {
-            const u = await register({ ...form, rgpd_consent: rgpd, newsletter });
+            const u = await register({ ...form, rgpd_consent: rgpd, charter_consent: charter, newsletter });
             toast.success(fr ? "Compte créé, bienvenue !" : "Account created, welcome!");
             navigate(u.role === "admin" ? "/admin" : from);
         } catch (err) {
@@ -68,6 +73,14 @@ const Register = () => {
                         <span>
                             {fr ? "J'accepte que mes données soient traitées conformément à la " : "I agree that my data is processed in accordance with the "}
                             <Link to="/confidentialite" target="_blank" className="text-brand-turquoise font-semibold hover:underline">{fr ? "politique de confidentialité (RGPD)" : "privacy policy (GDPR)"}</Link>.
+                        </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" checked={charter} onChange={(e) => setCharter(e.target.checked)} className="mt-1" data-testid="register-charter" />
+                        <span>
+                            {fr ? "Je confirme avoir pris connaissance de la " : "I confirm that I have read the "}
+                            <Link to="/charte-enfants" target="_blank" className="text-brand-turquoise font-semibold hover:underline">{fr ? "Charte de respect et de protection des enfants" : "Child Respect and Protection Charter"}</Link>
+                            {fr ? " et m'engage à en respecter les principes." : " and agree to abide by its principles."}
                         </span>
                     </label>
                     <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
