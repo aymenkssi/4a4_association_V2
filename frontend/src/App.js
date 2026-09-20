@@ -75,6 +75,7 @@ function App() {
                             <Route path="inscription" element={<Register />} />
                             <Route path="mentions-legales" element={<StaticPage slug="legal" />} />
                             <Route path="confidentialite" element={<StaticPage slug="privacy" />} />
+                            <Route path="charte-enfants" element={<StaticPage slug="charte-enfants" />} />
                         </Route>
 
                         <Route path="/admin/login" element={<Login />} />
