@@ -190,6 +190,7 @@ export const Footer = () => {
                     <ul className="space-y-2 text-sm">
                         <li><Link to="/mentions-legales" className="hover:text-brand-turquoise" data-testid="footer-legal">{tr("nav.legal")}</Link></li>
                         <li><Link to="/confidentialite" className="hover:text-brand-turquoise" data-testid="footer-privacy">{tr("nav.privacy")}</Link></li>
+                        <li><Link to="/charte-enfants" className="hover:text-brand-turquoise" data-testid="footer-charter">{tr("nav.charter")}</Link></li>
                         <li><Link to="/admin" className="hover:text-brand-turquoise text-xs text-gray-500" data-testid="footer-admin">{tr("nav.admin")}</Link></li>
                     </ul>
                     <a
