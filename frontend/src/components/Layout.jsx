@@ -175,6 +175,9 @@ export const Footer = () => {
                         <li><Link to="/evenements" className="hover:text-brand-turquoise" data-testid="footer-events">{tr("nav.events")}</Link></li>
                         {settings.gallery_enabled !== false && <li><Link to="/galerie" className="hover:text-brand-turquoise" data-testid="footer-gallery">{tr("nav.gallery")}</Link></li>}
                         <li><Link to="/devenir-membre" className="hover:text-brand-turquoise" data-testid="footer-member">{tr("nav.member")}</Link></li>
+                  {/* Lien externe */}
+                        <li><a href="https://solidarites.gouv.fr/charte-nationale-pour-laccueil-du-jeune-enfant" target="_blank" rel="noopener noreferrer" className="hover:text-brand-turquoise" data-testid="footer-charter" > La Charte nationale pour l’accueil du jeune enfant </a>  </li>
+                        <li><a href="https://www.leolagrange.org/le-kit-de-la-posture-educative-pour-les-equipes-des-directions-enfance/" target="_blank" rel="noopener noreferrer" className="hover:text-brand-turquoise" data-testid="footer-charter" > Kit de la posture éducative </a>  </li>
                     </ul>
                 </div>
 
